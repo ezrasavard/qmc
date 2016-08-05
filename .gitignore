@@ -1,0 +1,11 @@
+*.o
+src/test
+tests/*_sweep.sh
+results/*
+*.pyc
+solve
+src/SA_smoke_results.txt
+src/QMC_smoke_results.txt
+*.png
+data/
+*.ods

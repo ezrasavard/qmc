@@ -1,0 +1,30 @@
+File header comments
+Solution data output JSON
+    solver name
+    problem info (i j h/J)
+    params (generic)
+        - trials, steps, problem data filename
+    test params (solver specific)
+        - schedules, etc.
+    solution data (energy, hex version of spins array)
+
+Args:
+(Going to need an argparsing lib for this I think)
+    Trials
+    Test Params
+        - Steps
+        - T0, Tf for SA
+        - P, T, G0, Gf, Ep0, Epf for QMC
+        - Schedule type for QMC (sinusoid, linear)
+
+Makefile
+
+Test SA
+    - Ground state finding for XOR, Maj, Wires, Ising32
+    - Verify scaling
+
+Implement QMC
+
+Test QMC
+    - Ground state finding for XOR, Maj, Wires, Ising32
+    - Verify scaling
