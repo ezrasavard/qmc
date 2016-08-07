@@ -9,6 +9,15 @@
 #include "mcmc.h"
 #include "qmc.h"
 
+double QMC_NULL_SCHED[4] = { 0 };
+
+// returns the result of a polynomial defined by a3, a2, a1, and a0
+double qmc_calc_cubic(double t, double a3, double a2, double a1, double a0) {
+
+    return (a3*powf(t, 3) + a2*powf(t, 2) + a1*t + a0);
+
+}
+
 long int calc_jperp(int P, double T, double G, double Ep) {
 
     double Jp = -0.5*P*T*log(tanh(G/(Ep*P*T)));
@@ -17,9 +26,10 @@ long int calc_jperp(int P, double T, double G, double Ep) {
 }
 
 // adding clock zones will require each spin to have its own schedule
-void qmc(double G0, double Gf, double Ep0, double Epf, int P, double T, \
+void qmc(double G0, double Gf, double Ep0, double Epf, int P, double T,
          unsigned long int steps, IsingProblem* p, char* outfile,
-         bool log_accepts, long int dump_threshold) {
+         bool log_accepts, long int dump_threshold, double gsched[4],
+         double epsched[4]) {
 
     char buff[256];
     FILE *fp;
@@ -54,11 +64,26 @@ void qmc(double G0, double Gf, double Ep0, double Epf, int P, double T, \
     double G = G0;
     double Ep = Ep0;
 
-    for(int i = 0; i < steps; i++, G -= dG) {
-        Jp[i] = calc_jperp(P, T, G, Ep);
-        G_sched[i] = G;
-        Ep_sched[i] = Ep;
-        Ep += dEp;
+    if ((gsched != QMC_NULL_SCHED) && (epsched != QMC_NULL_SCHED)) {
+        // defined schedule
+        // will need to be stretched to fit the step count
+        double step_ratio = DWAVE_SCHED_LEN/steps;
+        for(int i = 0; i < steps; i++) {
+            Jp[i] = calc_jperp(P, T, G, Ep);
+            G_sched[i] = G;
+            Ep_sched[i] = Ep;
+            G = qmc_calc_cubic((i*step_ratio), gsched[0], gsched[1], gsched[2], gsched[3]);
+            Ep = qmc_calc_cubic((i*step_ratio), epsched[0], epsched[1], epsched[2], epsched[3]);
+        }
+    }
+    else {
+        // linear schedule
+        for(int i = 0; i < steps; i++, G -= dG) {
+            Jp[i] = calc_jperp(P, T, G, Ep);
+            G_sched[i] = G;
+            Ep_sched[i] = Ep;
+            Ep += dEp;
+        }
     }
 
     //Calculate initial energy

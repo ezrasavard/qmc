@@ -27,13 +27,15 @@ void print_help() {
             \n\n\t--log_accepts:        turn on logging of move acceptances\
             \n\n\t--log_thresh <float>: threshold for logging slice energies\
             \n\n\t--T <int>:            annealing temp\
-            \n\n\t--P <int>:            (QMC) number of trotter slices\
+            \n\nKeyworded Aguments (QMC only):\
+            \n\n\t--P <int>:            number of trotter slices\
             \n\n\t--PTxJ <double>:      overrides T choice and sets PT as multipler" 
             "\n\t                      of the average coupling strength in the problem\
             \n\n\t--MCSxS <int>:        sets the number of monte carlo steps as a "
             "\n\t                      multiple of the number of spins in the problem\
             \n\n\t--automagic:          (experimental!) automatically choose PTxJ and MCSxS "
             "\n\t                      to simulate the DWave output distribution\
+            \n\n\t--schedule <file>:    file describing annealing schedule\
             \n\nSee \"examples\" for examples of usage\n\n");
 
 }
@@ -65,6 +67,10 @@ int main(int argc, char* argv[]) {
     int trials = 5; // number of trials to run
     bool log_accepts = false;
     double log_thresh = 0;
+    char* qmc_schedule = NULL;
+    double gsched[4] = { 0 };
+    double epsched[4] = { 0 };
+
 
     if(argc > 1)
         problem = argv[1];
@@ -125,6 +131,10 @@ int main(int argc, char* argv[]) {
         }
         if (strcmp(argv[i], "--automagic") == 0) {
             automagic = true;
+        }
+        if (strcmp(argv[i], "--schedule") == 0) {
+            i++;
+            qmc_schedule = argv[i];
         }
     }
 
@@ -206,6 +216,29 @@ int main(int argc, char* argv[]) {
     printf("Average coupling: %6lf\n"
            "PT Value: %6lf\n",(p->avg_coupling),T*P);
 
+    char sched[80];
+    if (qmc_schedule != NULL) {
+        FILE *fp = fopen(qmc_schedule, "r");
+        // process each line into values and array scheds
+        fgets(sched, 80, fp);
+        sscanf(sched, "%lf %lf %lf %lf %lf %lf", &G0, &Gf, &gsched[0], &gsched[1],
+                &gsched[2], &gsched[3]);
+        fgets(sched, 80, fp);
+        sscanf(sched, "%lf %lf %lf %lf %lf %lf", &Ep0, &Epf, &epsched[0], &epsched[1],
+                &epsched[2], &epsched[3]);
+        fclose(fp);
+    }
+    (qmc_schedule != NULL ? sprintf(sched, "%s", "custom") : sprintf(sched, "%s", "linear"));
+    // if a qmc_schedule_file argument is given
+    // process the file like this:
+    // - the first line has G0, Gf, and a coeff array [4]
+    // - the second line is Ep0, Epf, etc...
+    // this file needs to be prepared in Python
+    // - process the original schedule into floats
+    // - curve fit it to a cubic for both G and Ep
+    // - write the file
+
+
     // run the solver
     char dumpfile[256];
     for(int i = 0; i < trials; i++) {
@@ -219,11 +252,12 @@ int main(int argc, char* argv[]) {
         else {
             sprintf(param_string, "{\"G0\": %3lf, \"Gf\": %6lf, \"Ep0\": %3lf,"
                    " \"Epf\": %3lf, \"P\": %d, \"T\": %6lf, \"steps\": %lu,"
-                   " \"PTxJ\": %3lf, \"MCSxS\": %d, \"N\": %d}",\
-                   G0, Gf, Ep0, Epf, P, T, steps, PTxJ, MCSxS, p->N);
+                   " \"PTxJ\": %3lf, \"MCSxS\": %d, \"N\": %d,"
+                   " \"schedule\": \"%s\"}",\
+                   G0, Gf, Ep0, Epf, P, T, steps, PTxJ, MCSxS, p->N, sched);
             assert(T > 0);
             qmc(G0, Gf, Ep0, Epf, P, T, steps, p, dumpfile, log_accepts,\
-                log_thresh);
+                log_thresh, gsched, epsched);
         }
 
         spins_as_hex((p->N), (p->spins), soln_hex);
