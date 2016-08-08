@@ -4,87 +4,52 @@ import numpy as np
 import os
 import string
 
-# Try Tau = 100 MCS/spin, PT = 20*<|J|>
+# Produce tests to sweep PTxJ and MCSxS
 
-# Sweep PTxJ and MCSxS
-# 50 <= MCSxS <= 2*N
-# 1 <= PTxJ <= 100
+PTxJ = np.linspace(1,100,20).astype(int)
 
-def qmc_string(infile, outdir, PTxJ, MCSxS, trials=100, P=60):
+def qmc_string(infile, outdir, PTxJ, MCSxS, trials=100, P=60, sched="../data/schedule.txt"):
 
     fname = string.join(["{:03d}".format(PTxJ), "_", "{:04d}".format(MCSxS), ".txt"],"")
     outfile = os.path.join(outdir, fname)
     s = " ".join(["../solve", infile, outfile, "qmc", "--trials", str(trials),
-            "--P", str(P), "--PTxJ", str(PTxJ), "--MCSxS", str(MCSxS)])
+            "--P", str(P), "--PTxJ", str(PTxJ), "--MCSxS", str(MCSxS), "--schedule",
+            sched])
 
     return s
 
+def make_testfile(infile, outdir, testfile, N, append=False):
+
+    cmds = []
+    for coupling in PTxJ:
+        for MCS in MCSxS(N):
+            cmds.append(qmc_string(infile, outdir, coupling, MCS))
+
+    mode = 'w'
+    if append:
+        mode = 'a'
+    with open(testfile, mode) as fp:
+        fp.write("#!/bin/bash\n")
+        for line in cmds:
+            fp.write(line)
+            fp.write('\n')
+
+def MCSxS(N):
+
+    return np.linspace(10,10*N,len(PTxJ)).astype(int)
+
+
 if __name__ == "__main__":
 
-    PTxJ = np.linspace(1,100,20).astype(int)
-    MCSxS = lambda N: np.linspace(10,10*N,len(PTxJ)).astype(int)
 
 #     XOR 102 spins
-    cmds = []
-    N = 102
-    infile = "../data/xor100/sol0.txt"
-    outdir = "../results/dists_xor/"
-
-    for coupling in PTxJ:
-        for MCS in MCSxS(N):
-            cmds.append(qmc_string(infile, outdir, coupling, MCS))
-
-    with open('dist_sweeps_xor.sh','w') as fp:
-        fp.write("#!/bin/bash\n")
-        for line in cmds:
-            fp.write(line)
-            fp.write('\n')
+    make_testfile("../data/xor100/sol0.txt", "../results/dists_xor/", "dist_sweeps_xor.sh", 102)
 
 #     MAJ 14 spins
-    cmds = []
-    N = 14
-    infile = "../data/maj531/sol0.txt"
-    outdir = "../results/dists_maj/"
-
-    for coupling in PTxJ:
-        for MCS in MCSxS(N):
-            cmds.append(qmc_string(infile, outdir, coupling, MCS))
-
-    with open('dist_sweeps_maj.sh','w') as fp:
-        fp.write("#!/bin/bash\n")
-        for line in cmds:
-            fp.write(line)
-            fp.write('\n')
+    make_testfile("../data/maj531/sol0.txt", "../results/dists_maj/", "dist_sweeps_maj.sh", 14)
 
 #     MEMORY 215 spins
-    cmds = []
-    N = 215
-    infile = "../data/mem100/sol0.txt"
-    outdir = "../results/dists_mem/"
+    make_testfile("../data/mem100/sol0.txt", "../results/dists_mem/", "dist_sweeps_mem.sh", 215)
 
-    for coupling in PTxJ:
-        for MCS in MCSxS(N):
-            cmds.append(qmc_string(infile, outdir, coupling, MCS))
-
-    with open('dist_sweeps_mem.sh','w') as fp:
-        fp.write("#!/bin/bash\n")
-        for line in cmds:
-            fp.write(line)
-            fp.write('\n')
-
-#     S3INV 52 spins, <|J|> = 0.019
-    cmds = []
-    N = 52
-    infile = "../data/s3inv20/sol0.txt"
-    outdir = "../results/dists_inv/"
-
-    for coupling in PTxJ:
-        for MCS in MCSxS(N):
-            cmds.append(qmc_string(infile, outdir, coupling, MCS))
-
-    with open('dist_sweeps_inv.sh','w') as fp:
-        fp.write("#!/bin/bash\n")
-        for line in cmds:
-            fp.write(line)
-            fp.write('\n')
-
+#     S3INV 52 spins
+    make_testfile("../data/s3inv20/sol0.txt", "../results/dists_inv/", "dist_sweeps_inv.sh", 52)
