@@ -9,7 +9,6 @@
 #include "mcmc.h"
 #include "qmc.h"
 
-double QMC_NULL_SCHED[4] = { 0 };
 
 // returns the result of a polynomial defined by a3, a2, a1, and a0
 double qmc_calc_cubic(double t, double a3, double a2, double a1, double a0) {
@@ -28,8 +27,8 @@ long int calc_jperp(int P, double T, double G, double Ep) {
 // adding clock zones will require each spin to have its own schedule
 void qmc(double G0, double Gf, double Ep0, double Epf, int P, double T,
          unsigned long int steps, IsingProblem* p, char* outfile,
-         bool log_accepts, long int dump_threshold, double gsched[4],
-         double epsched[4]) {
+         bool log_accepts, long int dump_threshold, char* schedfile,
+         double gsched[4], double epsched[4]) {
 
     char buff[256];
     FILE *fp;
@@ -64,7 +63,7 @@ void qmc(double G0, double Gf, double Ep0, double Epf, int P, double T,
     double G = G0;
     double Ep = Ep0;
 
-    if ((gsched != QMC_NULL_SCHED) && (epsched != QMC_NULL_SCHED)) {
+    if (schedfile != NULL) {
         // defined schedule
         // will need to be stretched to fit the step count
         double step_ratio = DWAVE_SCHED_LEN/steps;

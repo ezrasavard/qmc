@@ -71,7 +71,6 @@ int main(int argc, char* argv[]) {
     double gsched[4] = { 0 };
     double epsched[4] = { 0 };
 
-
     if(argc > 1)
         problem = argv[1];
     else {
@@ -257,7 +256,7 @@ int main(int argc, char* argv[]) {
                    G0, Gf, Ep0, Epf, P, T, steps, PTxJ, MCSxS, p->N, sched);
             assert(T > 0);
             qmc(G0, Gf, Ep0, Epf, P, T, steps, p, dumpfile, log_accepts,\
-                log_thresh, gsched, epsched);
+                log_thresh, qmc_schedule, gsched, epsched);
         }
 
         spins_as_hex((p->N), (p->spins), soln_hex);
