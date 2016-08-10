@@ -3,6 +3,7 @@
 import numpy as np
 import os
 import string
+import sys
 
 # Produce tests to sweep PTxJ and MCSxS
 
@@ -34,22 +35,30 @@ def make_testfile(infile, outdir, testfile, N, append=False):
             fp.write(line)
             fp.write('\n')
 
+    if not os.path.exists(os.path.dirname(outdir)):
+        os.makedirs(os.path.dirname(outdir))
+
 def MCSxS(N):
 
     return np.linspace(10,10*N,len(PTxJ)).astype(int)
 
+def get_N(infile):
+
+    data = np.loadtxt(infile, skiprows=1)
+    spins = np.unique(data[:,(0,1)])
+    return len(spins)
+
 
 if __name__ == "__main__":
 
-
-#     XOR 102 spins
-    make_testfile("../data/xor100/sol0.txt", "../results/dists_xor/", "dist_sweeps_xor.sh", 102)
-
-#     MAJ 14 spins
-    make_testfile("../data/maj531/sol0.txt", "../results/dists_maj/", "dist_sweeps_maj.sh", 14)
-
-#     MEMORY 215 spins
-    make_testfile("../data/mem100/sol0.txt", "../results/dists_mem/", "dist_sweeps_mem.sh", 215)
-
-#     S3INV 52 spins
-    make_testfile("../data/s3inv20/sol0.txt", "../results/dists_inv/", "dist_sweeps_inv.sh", 52)
+    # directories are laid out to have "circuitname/runtime/files" in the path
+    # traverse root directory, and list directories as dirs and files as files
+    for root, dirs, files in os.walk(sys.argv[1]):
+        if 'sol0.txt' in files:
+            path = os.path.relpath(root).split(os.sep)
+            infile = os.path.join(root, "sol0.txt")
+            outdir = os.path.join("../results", *path[-3:])
+            outfile = string.join(["GENERATED", path[-2], path[-1], "sweep.sh"],"_")
+            N = get_N(infile)
+            print("{}\n{}\n{}\n{}\n".format(infile, outdir, outfile, N))
+            make_testfile(infile, outdir, outfile, N)
