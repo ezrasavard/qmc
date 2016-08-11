@@ -1,6 +1,7 @@
 *.o
 src/test
 tests/*_sweep.sh
+tests/log*
 results/*
 *.pyc
 solve
