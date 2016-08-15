@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import dwave
+import lib_dwave as dwave
 import fnmatch
 import json
 import math
@@ -9,6 +9,56 @@ import numpy as np
 import os
 import string
 import sys
+
+def make_heatmap(data, title, outfile):
+
+    if type(data) != np.array:
+        # data might be an npy file instead of an array
+        data = np.load(data)
+
+    x = data[:,0]
+    y = data[:,1]
+    z = data[:,2]
+
+    block_size = (np.max(x) - np.min(x))**2
+    plt.scatter(x,y,c=z,s=block_size,edgecolors='face',marker='s')
+    plt.xlim(np.min(x),np.max(x))
+    plt.ylim(np.min(y),np.max(y))
+    plt.xlabel("PTxJ")
+    plt.ylabel("MCSxS")
+    cb = plt.colorbar()
+    cb.set_label('Differences')
+    plt.title(title)
+    plt.savefig(outfile, bbox_inches='tight', format='png')
+
+
+def best_diffs(data, diff_percentage=5, outfile='../results/diffs_comparison.png', block_size=40, ret=False, plot=True):
+
+    if type(data) != np.array:
+        # data might be an npy file instead of an array
+        data = np.load(data)
+    z = data[:,2]
+    diff_thresh = np.percentile(z, diff_percentage)
+    data = data[data[:,2] <= diff_thresh]
+    x = data[:,0]
+    y = data[:,1]
+
+    if plot:
+        fig = plt.figure()
+    #     ax1 = fig.add_subplot(111)
+    #     ax1.scatter(x, y, s=block_size, alpha=0.5, label=row[0], c=row[2], marker=row[3])
+        plt.scatter(x, y, s=block_size, alpha=0.5, label=row[0], c=row[2], marker=row[3])
+
+        plt.xlabel("PTxJ")
+        plt.ylabel("MCSxS")
+        plt.legend(loc='upper left')
+        plt.title("Lowest {:.0f}% of Distribution Difference".format(diff_percentage))
+        plt.grid(True)
+        plt.savefig(string.join([fname,"dist.png"],"_"), bbox_inches='tight', format='png')
+
+    if ret:
+        return data
+
 
 def boltz_weighted_difference(Ex, Px, Qx, kT):
 
@@ -22,7 +72,7 @@ def boltz_weighted_difference(Ex, Px, Qx, kT):
 
     return D/Enet
 
-def calc_diffs(qmc_names, make_plots=True, kT=50, outfile="diffs.npy"):
+def calc_diffs(qmc_names, make_plots=True, kT=50, outfile="diffs.npy", ret=False):
 
     diff_data = []
 
@@ -54,10 +104,6 @@ def calc_diffs(qmc_names, make_plots=True, kT=50, outfile="diffs.npy"):
         D = boltz_weighted_difference(Ex, Px, Qx, kT)
 
         diff_data.append((params['PTxJ'], params['MCSxS'], D))
-#         if (D <= 0.08):
-#             print("Difference: {:.5f}\t<---".format(D))
-#         else:
-#             print("Difference: {:.5f}".format(D))
 
         P_str = "P: {}".format(params['P'])
         PT_str = "PT: {:.4f}".format(params['P']*params['T'])
@@ -82,33 +128,6 @@ def calc_diffs(qmc_names, make_plots=True, kT=50, outfile="diffs.npy"):
     fname = os.path.join(fdir, outfile)
     np.save(fname, diff_data)
 
-if __name__ == "__main__":
+    if ret:
+        return diff_data
 
-    qmc_names = []
-    outfile = "diffs.npy"
-    if sys.argv[1] == "--qmc":
-        fdir = sys.argv[2]
-        for fname in os.listdir(fdir):
-            if fnmatch.fnmatch(fname, '*.txt'):
-                qmc_names.append(os.path.join(fdir,fname))
-
-        qmc_names.sort(key=str.lower)
-    elif sys.argv[1] == "--qmcfile":
-        fdir, fname = os.path.split(sys.argv[2])
-        qmc_names.append(sys.argv[2])
-        outfile = string.split(fname,'.')[0] + "_diffs.npy"
-        print outfile
-
-    if sys.argv[3] == "--dwave":
-        dwave_file = sys.argv[4]
-        counts, e = dwave.load_jakes_dwave_data(dwave_file)
-        state_array = []
-        for i, count in enumerate(counts):
-            state_array += [e[i] for x in range(0,count)]
-
-    if "--sweep" in sys.argv:
-        for kT in np.linspace(.5,50,10):
-            outfile = "diffs_{}.npy".format(kT)
-            calc_diffs(qmc_names, make_plots=False, kT=kT, outfile=outfile)
-    else:
-        calc_diffs(qmc_names, make_plots=True, kT=50, outfile=outfile)
