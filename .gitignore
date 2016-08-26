@@ -1,6 +1,7 @@
 *.o
 src/test
 tests/*_sweep.sh
+examples/output_files/
 tests/log*
 results/*
 *.pyc
@@ -9,4 +10,5 @@ src/SA_smoke_results.txt
 src/QMC_smoke_results.txt
 *.png
 data/
+ezra_test_circuits/
 *.ods

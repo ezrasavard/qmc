@@ -7,12 +7,52 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from scipy.optimize import curve_fit
 import string
 import sys
 
-def make_heatmap(data, title, outfile):
+class Transformer(object):
 
-    if type(data) != np.array:
+    def __init__(self, data, N):
+
+        self.data = data
+        x = data[:,0]
+        y = data[:,1]
+        print("x: \n{}".format(x))
+        print("y: \n{}".format(y))
+        self.xmed = np.median(x)
+        self.N = N
+        self.mcsxs_args, _ = curve_fit(self.MCSxSfunc, x, y, maxfev=1000000)
+        self.curve_data = [[ptxj, self.MCSxSfunc(ptxj, *self.mcsxs_args)] for ptxj in x]
+
+    def MCSxSfunc(self, x, k1, k2, k3, k4):
+
+        fN = np.log(self.N)*self.N
+
+        return k1*(x**k2)*(fN**k3 + k4)
+
+
+def fit_PTxJ(xmed, N):
+    # xmed and N are arrays
+
+    return curve_fit(PTxJfunc, N, xmed, maxfev=100000)[0]
+
+def PTxJmap(args):
+
+    return "PTxJ: N -> {:3f} * (NlogN)^{:3f}".format(*args)
+
+def MCSxSmap(args):
+    return "MCSxS: PTxJ, N -> {:3f} * (PTxJ^{:3f}) * ((NlogN)^{:3f} + {:3f})".format(*args)
+
+
+def PTxJfunc(N, a, b):
+
+    return a*((np.log(N)*N)**b)
+
+
+def make_heatmap(data, title, outfile, data_is_file=False):
+
+    if data_is_file:
         # data might be an npy file instead of an array
         data = np.load(data)
 
@@ -32,9 +72,9 @@ def make_heatmap(data, title, outfile):
     plt.savefig(outfile, bbox_inches='tight', format='png')
 
 
-def best_diffs(data, diff_percentage=5, outfile='../results/diffs_comparison.png', block_size=40, ret=False, plot=True):
+def best_diffs(data, diff_percentage=5, outfile='../results/diffs_comparison.png', block_size=40, ret=False, plot=True, data_is_file=False):
 
-    if type(data) != np.array:
+    if data_is_file:
         # data might be an npy file instead of an array
         data = np.load(data)
     z = data[:,2]
@@ -45,8 +85,6 @@ def best_diffs(data, diff_percentage=5, outfile='../results/diffs_comparison.png
 
     if plot:
         fig = plt.figure()
-    #     ax1 = fig.add_subplot(111)
-    #     ax1.scatter(x, y, s=block_size, alpha=0.5, label=row[0], c=row[2], marker=row[3])
         plt.scatter(x, y, s=block_size, alpha=0.5, label=row[0], c=row[2], marker=row[3])
 
         plt.xlabel("PTxJ")
@@ -57,6 +95,8 @@ def best_diffs(data, diff_percentage=5, outfile='../results/diffs_comparison.png
         plt.savefig(string.join([fname,"dist.png"],"_"), bbox_inches='tight', format='png')
 
     if ret:
+        if data == []:
+            raise Exception("empty data for file: {}".format(outfile))
         return data
 
 
@@ -65,6 +105,8 @@ def boltz_weighted_difference(Ex, Px, Qx, kT):
     D = 0
     Enet = 0
     for i, E in enumerate(Ex):
+        if Px[i] == 0 and Qx[i] == 0:
+            continue
         x = math.exp(-E/kT)
         diff = abs(Px[i] - Qx[i])
         D += x*diff
@@ -72,13 +114,18 @@ def boltz_weighted_difference(Ex, Px, Qx, kT):
 
     return D/Enet
 
-def calc_diffs(qmc_names, make_plots=True, kT=50, outfile="diffs.npy", ret=False):
+def calc_diffs(qmc_names, dwave_file, make_plots=True, kT=50, outfile="diffs.npy", ret=False):
 
     diff_data = []
 
+    counts, e = dwave.load_jakes_dwave_data(dwave_file)
+    state_array = []
+    for i, count in enumerate(counts):
+        state_array += [e[i] for x in range(0,count)]
+
     for fname in qmc_names:
         fname_str = os.path.split(fname)[-1]
-        print("{}:".format(fname_str))
+#         print("calc diffs for: {}".format(fname_str))
         with open(fname, 'r') as fp:
             raw = json.load(fp)
 
@@ -90,9 +137,11 @@ def calc_diffs(qmc_names, make_plots=True, kT=50, outfile="diffs.npy", ret=False
         vectors = data[:,1]
         dwave_max = np.max(state_array)
         dwave_min = np.min(state_array)
-        bottom = int(math.floor(min(np.min(energies), dwave_min)))
-        top = int(math.ceil(max(np.max(energies), dwave_max)))
-        bins = np.linspace(dwave_min, dwave_max, 20)
+        qmc_max = np.max(energies)
+        qmc_min = np.min(energies)
+        bottom = int(math.floor(min(qmc_min, dwave_min)))
+        top = int(math.ceil(max(qmc_max, dwave_max)))
+        bins = np.linspace(bottom, top, (top-bottom)) # bin at every integer energy
 
         # calculate dists and differences
         Px, Ex, _ = plt.hist(energies, bins, normed=True, orientation='horizontal',
@@ -101,6 +150,7 @@ def calc_diffs(qmc_names, make_plots=True, kT=50, outfile="diffs.npy", ret=False
         Qx, _, _ = plt.hist(state_array, bins, normed=True, orientation='horizontal',
                 facecolor='red', alpha=0.5, label='DWave')
         Ex = Ex[:-1]
+        kT = max(abs(Ex))/10
         D = boltz_weighted_difference(Ex, Px, Qx, kT)
 
         diff_data.append((params['PTxJ'], params['MCSxS'], D))
@@ -125,9 +175,14 @@ def calc_diffs(qmc_names, make_plots=True, kT=50, outfile="diffs.npy", ret=False
         plt.close()
 
     diff_data = np.array(diff_data)
-    fname = os.path.join(fdir, outfile)
-    np.save(fname, diff_data)
+    np.save(outfile, diff_data)
 
     if ret:
         return diff_data
 
+def get_N(infile):
+
+    print("Getting N from: {}".format(infile))
+    data = np.loadtxt(infile, skiprows=1)
+    spins = np.unique(data[:,(0,1)])
+    return len(spins)

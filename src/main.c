@@ -49,30 +49,32 @@ int main(int argc, char* argv[]) {
 //*******************************************
 
     // validate arguments
-    char* problem;
-    char* outfile;
-    char* solver;
+    char problemFile[256];
+    char outfile[256];
+    char solver[256];
+    char qmc_schedule[256];
 
-    // not yet implemented
-    // want a real argparser for these
-    unsigned long int steps = 1e5; // number of Monte Carlo steps
-    double T_start = 3; // override annealing start temp
-    double T_low = ZERO_TEMP; // override annealing end temp
-    double T = 0.015; // (QMC) annealing temp
-    int P = 60; // (QMC) number of Trotter slices for QMC
-    double G0 = 10; // (QMC) override initial tranverse field
-    double Gf = 1e-4; // (QMC) override final tranverse field
-    double Ep0 = 0.1; // (QMC) override initial longitudinal field 
-    double Epf = 1; // (QMC) override final longitudinal field
-    int trials = 5; // number of trials to run
-    bool log_accepts = false;
-    double log_thresh = 0;
-    char* qmc_schedule = NULL;
-    double gsched[4] = { 0 };
-    double epsched[4] = { 0 };
+    static unsigned long int steps = 1e5; // number of Monte Carlo steps
+    static double T_start = 3; // override annealing start temp
+    static double T_low = ZERO_TEMP; // override annealing end temp
+    static double T = 0.015; // (QMC) annealing temp
+    static int P = 60; // (QMC) number of Trotter slices for QMC
+    static double G0 = 10; // (QMC) override initial tranverse field
+    static double Gf = 1e-4; // (QMC) override final tranverse field
+    static double Ep0 = 0.1; // (QMC) override initial longitudinal field
+    static double Epf = 1; // (QMC) override final longitudinal field
+    static int trials = 5; // number of trials to run
+    static bool log_accepts = false;
+    static double log_thresh = 0;
+    static double gsched[4] = { 0 };
+    static double epsched[4] = { 0 };
+    static bool automagic = false;
+    static double PTxJ = 0;
+    static int MCSxS = 0;
 
     if(argc > 1)
-        problem = argv[1];
+        sprintf(problemFile, "%s", argv[1]);
+//         problem = argv[1];
     else {
         print_help();
         return 1;
@@ -84,7 +86,8 @@ int main(int argc, char* argv[]) {
     }
 
     if(argc > 2)
-        outfile = argv[2];
+        sprintf(outfile, "%s", argv[2]);
+//         outfile = argv[2];
     else {
         printf("missing output file name\n");
         print_help();
@@ -92,7 +95,8 @@ int main(int argc, char* argv[]) {
     }
 
     if(strcmp(argv[3], "qmc") == 0 || (strcmp(argv[3], "sa")) == 0)
-        solver = argv[3];
+        sprintf(solver, "%s", argv[3]);
+//         solver = argv[3];
     else {
         printf("invalid solver: %s\n",argv[3]);
         print_help();
@@ -102,7 +106,6 @@ int main(int argc, char* argv[]) {
     // keeping for backwards compatibility with old tests
     steps = atol(argv[4]);
     trials = atoi(argv[5]);
-    bool automagic = false;
 
     for (int i = 4; i < argc; i++) {
         if (strcmp(argv[i], "--P") == 0) {
@@ -133,12 +136,10 @@ int main(int argc, char* argv[]) {
         }
         if (strcmp(argv[i], "--schedule") == 0) {
             i++;
-            qmc_schedule = argv[i];
+            sprintf(qmc_schedule, "%s", argv[i]);
         }
     }
 
-    double PTxJ = 0;
-    int MCSxS = 0;
     for (int i = 6; i < argc; i++) {
         if (strcmp(argv[i], "--PTxJ") == 0) {
             i++;
@@ -156,14 +157,13 @@ int main(int argc, char* argv[]) {
 //*******************************************
 
     // initialize problem
-    IsingProblem* p = init_IsingProblem(argv[1]);
+    IsingProblem* p = init_IsingProblem(problemFile);
     if(p == NULL) {
-        printf("unable to initialize ising problem: %s\n", problem);
+        printf("unable to initialize ising problem: %s\n", problemFile);
         return 1;
     }
 
     // prepare storage for solutions
-    char* s = NULL;
     char param_string[256];
     /*
        Magic Numbers
@@ -218,6 +218,10 @@ int main(int argc, char* argv[]) {
     char sched[80];
     if (qmc_schedule != NULL) {
         FILE *fp = fopen(qmc_schedule, "r");
+        if(fp == NULL) {
+            perror(("Error opening file: %s", qmc_schedule));
+            return 1;
+        }
         // process each line into values and array scheds
         fgets(sched, 80, fp);
         sscanf(sched, "%lf %lf %lf %lf %lf %lf", &G0, &Gf, &gsched[0], &gsched[1],
@@ -267,23 +271,26 @@ int main(int argc, char* argv[]) {
 
     json_object_set_new(root, "test_params", json_string(param_string));
 
-    s = json_dumps(root, JSON_INDENT(1));
-    json_decref(root);
-
     // write output data to file
     FILE *fp = fopen(outfile, "w+");
     if(fp == NULL) {
-        perror("Error opening file");
+        perror(("Error opening file: %s", outfile));
         return 1;
     }
 
     for(int i = 1; i < argc; i++) {
         printf("arg: %d - %s\n", i, argv[i]);
     }
-    fputs(s, fp);
+//     s = json_dumps(root, JSON_INDENT(1));
+
+    fputs(json_dumps(root, JSON_INDENT(1)), fp);
+    json_decref(root);
     fclose(fp);
 
     // clean up
     delete_IsingProblem(p);
+    for(int i = 1; i < argc; i++) {
+        printf("arg: %d - %s\n", i, argv[i]);
+    }
 
 }
