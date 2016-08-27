@@ -1,6 +1,7 @@
 *.o
 src/test
 tests/*_sweep.sh
+tests/runtests.sh
 examples/output_files/
 tests/log*
 results/*

@@ -61,6 +61,7 @@ def make_heatmap(data, title, outfile, data_is_file=False):
     z = data[:,2]
 
     block_size = (np.max(x) - np.min(x))**2
+    plt.figure()
     plt.scatter(x,y,c=z,s=block_size,edgecolors='face',marker='s')
     plt.xlim(np.min(x),np.max(x))
     plt.ylim(np.min(y),np.max(y))
@@ -70,6 +71,7 @@ def make_heatmap(data, title, outfile, data_is_file=False):
     cb.set_label('Differences')
     plt.title(title)
     plt.savefig(outfile, bbox_inches='tight', format='png')
+    plt.close()
 
 
 def best_diffs(data, diff_percentage=5, outfile='../results/diffs_comparison.png', block_size=40, ret=False, plot=True, data_is_file=False):
@@ -104,12 +106,23 @@ def boltz_weighted_difference(Ex, Px, Qx, kT):
 
     D = 0
     Enet = 0
+    overlap = False
+    for i, P in enumerate(Px):
+        if P != 0 and Qx[i] != 0:
+            overlap = True
+            break
+
+    if overlap == False:
+        # no overlap at all == diff of 1
+        return 1.0
+
     for i, E in enumerate(Ex):
         if Px[i] == 0 and Qx[i] == 0:
+            # no contribution from both empty
             continue
         x = math.exp(-E/kT)
         diff = abs(Px[i] - Qx[i])
-        D += x*diff
+        D += 3*x*diff
         Enet += x
 
     return D/Enet
@@ -144,13 +157,14 @@ def calc_diffs(qmc_names, dwave_file, make_plots=True, kT=50, outfile="diffs.npy
         bins = np.linspace(bottom, top, (top-bottom)) # bin at every integer energy
 
         # calculate dists and differences
+        plt.figure()
         Px, Ex, _ = plt.hist(energies, bins, normed=True, orientation='horizontal',
                 facecolor='green', alpha=1, label='QMC')
 
         Qx, _, _ = plt.hist(state_array, bins, normed=True, orientation='horizontal',
                 facecolor='red', alpha=0.5, label='DWave')
         Ex = Ex[:-1]
-        kT = max(abs(Ex))/10
+        kT = max(abs(Ex))/2
         D = boltz_weighted_difference(Ex, Px, Qx, kT)
 
         diff_data.append((params['PTxJ'], params['MCSxS'], D))
@@ -164,14 +178,14 @@ def calc_diffs(qmc_names, dwave_file, make_plots=True, kT=50, outfile="diffs.npy
         param_str = string.join([P_str, PT_str, Tau_str, PTxJ_str, MCSxS_str, N_str], "; ")
 
         if make_plots:
-            plt.text(.1, bottom - .75*(bottom - top), "Difference: {:.5f}".format(D), fontsize=18)
             plt.ylabel('Energies')
-            plt.xlabel('Number of Slices in State')
+            plt.xlabel('Percentage of Results in State')
+            plt.ylim((-2*kT, 0))
+            plt.xlim((0,1))
             plt.legend(loc='best')
-            plt.title('Distribution for {}\n{}'.format(fname_str, param_str))
+            plt.title('Distribution for {}\n{}\nDifference: {:4f}'.format(fname_str, param_str, D))
             plt.grid(True)
             plt.savefig(string.join([fname,"dist.png"],"_"), bbox_inches='tight', format='png')
-
         plt.close()
 
     diff_data = np.array(diff_data)

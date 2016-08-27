@@ -24,12 +24,13 @@ if __name__ == "__main__":
             path = os.path.relpath(root).split(os.sep)
             outfile = os.path.join(root, string.join(["data", path[-2], path[-1], ".npy"],"_"))
             fnames = [os.path.join(root,name) for name in files if fnmatch.fnmatch(name, "*.txt")]
+            if fnames == []:
+                continue
             dwave_file = copy.copy(path)
             dwave_file[1] = "data"
             dwave_file.append("sol0.json")
             dwave_file = os.path.join(*dwave_file)
             results.append((fnames,path,outfile,dwave_file))
-#             print("Preparing: {}\n".format(outfile))
 
     # 3. process each set of results (difference calcs)
     # 4. gather problem data into useful variables (N, problem_name)
@@ -88,8 +89,10 @@ if __name__ == "__main__":
         mcsxs_args.append(tx.mcsxs_args)
 
     plotfile = os.path.join(sys.argv[1], "prediction_curves.png")
+    plt.legend(loc='best')
     print("plotting curve fits: {}\n".format(plotfile))
-    plt.savefig(outfile, bbox_inches='tight', format='png')
+    plt.savefig(plotfile, bbox_inches='tight', format='png')
+    plt.close()
 
 # 12. Calculate some mean arguments off mcsxs_args, save them as a string
     mcsxs_args = np.array(mcsxs_args).T
