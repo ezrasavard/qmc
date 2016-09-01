@@ -18,6 +18,8 @@ class Transformer(object):
         self.data = data
         x = data[:,0]
         y = data[:,1]
+        self.x = x
+        self.y = y
         print("x: \n{}".format(x))
         print("y: \n{}".format(y))
         self.xmed = np.median(x)
@@ -29,7 +31,7 @@ class Transformer(object):
 
         fN = np.log(self.N)*self.N
 
-        return k1*(x**k2)*(fN**k3 + k4)
+        return k1*(x**k2)*(fN**(-k3)) + k4
 
 
 def fit_PTxJ(xmed, N):
@@ -42,12 +44,16 @@ def PTxJmap(args):
     return "PTxJ: N -> {:3f} * (NlogN)^{:3f}".format(*args)
 
 def MCSxSmap(args):
+
     return "MCSxS: PTxJ, N -> {:3f} * (PTxJ^{:3f}) * ((NlogN)^{:3f} + {:3f})".format(*args)
 
+def MCSxSmap2(args):
+
+    return "MCSxS: PTxJ -> {:3f} * (NlogN)^{:3f}".format(*args)
 
 def PTxJfunc(N, a, b):
 
-    return a*((np.log(N)*N)**b)
+    return a*((np.log(N)*N)**(-b))
 
 
 def make_heatmap(data, title, outfile, data_is_file=False):
@@ -62,9 +68,12 @@ def make_heatmap(data, title, outfile, data_is_file=False):
 
     block_size = (np.max(x) - np.min(x))**2
     plt.figure()
-    plt.scatter(x,y,c=z,s=block_size,edgecolors='face',marker='s')
-    plt.xlim(np.min(x),np.max(x))
-    plt.ylim(np.min(y),np.max(y))
+#     plt.scatter(x,y,c=z,s=block_size,edgecolors='face',marker='s')
+    plt.scatter(x,y,c=z,marker='s',edgecolors='face')
+#     plt.xlim(np.min(x),np.max(x))
+#     plt.ylim(np.min(y),np.max(y))
+    plt.xlim(0,np.max(x))
+    plt.ylim(0,np.max(y))
     plt.xlabel("PTxJ")
     plt.ylabel("MCSxS")
     cb = plt.colorbar()
@@ -122,7 +131,7 @@ def boltz_weighted_difference(Ex, Px, Qx, kT):
             continue
         x = math.exp(-E/kT)
         diff = abs(Px[i] - Qx[i])
-        D += 3*x*diff
+        D += x*diff
         Enet += x
 
     return D/Enet

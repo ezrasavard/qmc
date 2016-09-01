@@ -7,7 +7,9 @@ import sys
 
 # Produce tests to sweep PTxJ and MCSxS
 
-PTxJ = np.linspace(1,100,20).astype(int)
+PTxJ = list(np.linspace(1,100,20).astype(int))
+PTxJ += list(np.linspace(1,10,10).astype(int))
+PTxJ = np.unique(np.array(PTxJ))
 
 def qmc_string(infile, outdir, PTxJ, MCSxS, trials=100, P=60, sched="../data/schedule.txt"):
 

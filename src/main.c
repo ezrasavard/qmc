@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
     // validate arguments
     char problemFile[256];
     char outfile[256];
-    char solver[256];
+    char solver[4];
     char qmc_schedule[256];
 
     static unsigned long int steps = 1e5; // number of Monte Carlo steps
@@ -71,23 +71,28 @@ int main(int argc, char* argv[]) {
     static bool automagic = false;
     static double PTxJ = 0;
     static int MCSxS = 0;
+	static bool schedule = false;
 
     if(argc > 1)
         sprintf(problemFile, "%s", argv[1]);
-//         problem = argv[1];
     else {
         print_help();
         return 1;
     }
+
 
     if(strcmp(argv[1], "--help") == 0) {
         print_help();
         return 1;
     }
 
+
+    for(int i = 1; i < argc; i++) {
+        printf("arg: %d - %s\n", i, argv[i]);
+    }
+
     if(argc > 2)
         sprintf(outfile, "%s", argv[2]);
-//         outfile = argv[2];
     else {
         printf("missing output file name\n");
         print_help();
@@ -96,7 +101,6 @@ int main(int argc, char* argv[]) {
 
     if(strcmp(argv[3], "qmc") == 0 || (strcmp(argv[3], "sa")) == 0)
         sprintf(solver, "%s", argv[3]);
-//         solver = argv[3];
     else {
         printf("invalid solver: %s\n",argv[3]);
         print_help();
@@ -137,6 +141,7 @@ int main(int argc, char* argv[]) {
         if (strcmp(argv[i], "--schedule") == 0) {
             i++;
             sprintf(qmc_schedule, "%s", argv[i]);
+			schedule = true;
         }
     }
 
@@ -198,7 +203,7 @@ int main(int argc, char* argv[]) {
     // automagic is the result of my undergraduate research
     // automagic has been tested on QCA circuits only and ranging from
     //  N = 14 to N = 215
-    if (automagic == true) {
+    if(automagic == true) {
         double NlnN = (p->N)*log(p->N);
         double f = 6.5;
         double g = 0.5*powf((f-3.3),1.5) + 6.5;
@@ -207,16 +212,16 @@ int main(int argc, char* argv[]) {
         MCSxS = g*powf(NlnN,0.66);
     }
 
-    if (PTxJ != 0)
+    if(PTxJ != 0)
         T = PTxJ*(p->avg_coupling)/P;
-    if (MCSxS != 0)
+    if(MCSxS != 0)
         steps = MCSxS*(p->N);
 
     printf("Average coupling: %6lf\n"
            "PT Value: %6lf\n",(p->avg_coupling),T*P);
 
     char sched[80];
-    if (qmc_schedule != NULL) {
+    if(schedule == true) {
         FILE *fp = fopen(qmc_schedule, "r");
         if(fp == NULL) {
             perror(("Error opening file: %s", qmc_schedule));
@@ -231,7 +236,7 @@ int main(int argc, char* argv[]) {
                 &epsched[2], &epsched[3]);
         fclose(fp);
     }
-    (qmc_schedule != NULL ? sprintf(sched, "%s", "custom") : sprintf(sched, "%s", "linear"));
+    schedule == true ? sprintf(sched, "%s", "custom") : sprintf(sched, "%s", "linear");
     // if a qmc_schedule_file argument is given
     // process the file like this:
     // - the first line has G0, Gf, and a coeff array [4]
@@ -289,8 +294,4 @@ int main(int argc, char* argv[]) {
 
     // clean up
     delete_IsingProblem(p);
-    for(int i = 1; i < argc; i++) {
-        printf("arg: %d - %s\n", i, argv[i]);
-    }
-
 }
