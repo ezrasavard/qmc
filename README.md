@@ -1,20 +1,9 @@
 Path Integral Quantum Monte Carlo (QMC) and Simulated Annealing (SA) for solving
 ising spin glasses.
 
-This file is part of FreePIMC.
-
-FreePIMC is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-FreePIMC is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with FreePIMC.  If not, see <http://www.gnu.org/licenses/>.
+This file is part of FreePIMC, originally authored by Ezra Savard.
+It is free software under the MIT License, and is distributed in the hope 
+that it will be useful. See "LICENSE" for details.
 
 #Background
 FreePIMC is a C port and enhancement of my undergrad thesis, doing QMC
@@ -31,7 +20,8 @@ This research was funded by NSERC and the University of
 British Columbia, so thanks for that!
 
 Much of the work on path integral quantum monte carlo simulation is based off
-the 2003 paper "" by Martonak et al.
+the 2003 paper "Quantum Annealing by the path-integral Monte Carlo method..." by
+Martonak et al.
 
 #Directory Structure
 data:
@@ -83,9 +73,15 @@ Keyworded Arguments:
 
 	--trials <int>:       number of trials            
 
-	--P <int>:            number of slices to use in QMC            
+	--log_accepts:        turn on logging of move acceptances            
+
+	--log_thresh <float>: threshold for logging slice energies            
 
 	--T <int>:            annealing temp            
+
+Keyworded Aguments (QMC only):            
+
+	--P <int>:            number of trotter slices            
 
 	--PTxJ <double>:      overrides T choice and sets PT as multipler
 	                      of the average coupling strength in the problem            
@@ -93,8 +89,9 @@ Keyworded Arguments:
 	--MCSxS <int>:        sets the number of monte carlo steps as a 
 	                      multiple of the number of spins in the problem            
 
-	--log_accepts:        turn on logging of move acceptances in QMC            
+	--automagic:          (experimental!) automatically choose PTxJ and MCSxS 
+	                      to simulate the DWave output distribution            
 
-	--log_thresh <float>: threshold for logging slice energies in QMC            
+	--schedule <file>:    file describing annealing schedule            
 
 See "examples" for examples of usage
