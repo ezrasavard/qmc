@@ -21,6 +21,8 @@ if __name__ == "__main__":
     # traverse root directory, and list directories as dirs and files as files
     for root, dirs, files in os.walk(sys.argv[1]):
         path = os.path.relpath(root).split(os.sep)
+        if path[-1][0] == 'N':
+            continue
         if path[-1] != sys.argv[2]:
             continue
         if files != []:
