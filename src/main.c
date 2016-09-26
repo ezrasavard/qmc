@@ -27,13 +27,15 @@ void print_help() {
             \n\n\t--log_accepts:        turn on logging of move acceptances\
             \n\n\t--log_thresh <float>: threshold for logging slice energies\
             \n\n\t--T <int>:            annealing temp\
-            \n\n\t--P <int>:            (QMC) number of trotter slices\
+            \n\nKeyworded Aguments (QMC only):\
+            \n\n\t--P <int>:            number of trotter slices\
             \n\n\t--PTxJ <double>:      overrides T choice and sets PT as multipler" 
             "\n\t                      of the average coupling strength in the problem\
             \n\n\t--MCSxS <int>:        sets the number of monte carlo steps as a "
             "\n\t                      multiple of the number of spins in the problem\
             \n\n\t--automagic:          (experimental!) automatically choose PTxJ and MCSxS "
             "\n\t                      to simulate the DWave output distribution\
+            \n\n\t--schedule <file>:    file describing annealing schedule\
             \n\nSee \"examples\" for examples of usage\n\n");
 
 }
@@ -47,39 +49,50 @@ int main(int argc, char* argv[]) {
 //*******************************************
 
     // validate arguments
-    char* problem;
-    char* outfile;
-    char* solver;
+    char problemFile[256];
+    char outfile[256];
+    char solver[4];
+    char qmc_schedule[256];
 
-    // not yet implemented
-    // want a real argparser for these
-    unsigned long int steps = 1e5; // number of Monte Carlo steps
-    double T_start = 3; // override annealing start temp
-    double T_low = ZERO_TEMP; // override annealing end temp
-    double T = 0.015; // (QMC) annealing temp
-    int P = 60; // (QMC) number of Trotter slices for QMC
-    double G0 = 10; // (QMC) override initial tranverse field
-    double Gf = 1e-4; // (QMC) override final tranverse field
-    double Ep0 = 0.1; // (QMC) override initial longitudinal field 
-    double Epf = 1; // (QMC) override final longitudinal field
-    int trials = 5; // number of trials to run
-    bool log_accepts = false;
-    double log_thresh = 0;
+    static unsigned long int steps = 1e5; // number of Monte Carlo steps
+    static double T_start = 3; // override annealing start temp
+    static double T_low = ZERO_TEMP; // override annealing end temp
+    static double T = 0.015; // (QMC) annealing temp
+    static int P = 60; // (QMC) number of Trotter slices for QMC
+    static double G0 = 10; // (QMC) override initial tranverse field
+    static double Gf = 1e-4; // (QMC) override final tranverse field
+    static double Ep0 = 0.1; // (QMC) override initial longitudinal field
+    static double Epf = 1; // (QMC) override final longitudinal field
+    static int trials = 5; // number of trials to run
+    static bool log_accepts = false;
+    static double log_thresh = 0;
+    static double gsched[4] = { 0 };
+    static double epsched[4] = { 0 };
+    static bool automagic = false;
+    static double PTxJ = 0;
+    static int MCSxS = 0;
+	static bool schedule = false;
 
     if(argc > 1)
-        problem = argv[1];
+        sprintf(problemFile, "%s", argv[1]);
     else {
         print_help();
         return 1;
     }
+
 
     if(strcmp(argv[1], "--help") == 0) {
         print_help();
         return 1;
     }
 
+
+    for(int i = 1; i < argc; i++) {
+        printf("arg: %d - %s\n", i, argv[i]);
+    }
+
     if(argc > 2)
-        outfile = argv[2];
+        sprintf(outfile, "%s", argv[2]);
     else {
         printf("missing output file name\n");
         print_help();
@@ -87,7 +100,7 @@ int main(int argc, char* argv[]) {
     }
 
     if(strcmp(argv[3], "qmc") == 0 || (strcmp(argv[3], "sa")) == 0)
-        solver = argv[3];
+        sprintf(solver, "%s", argv[3]);
     else {
         printf("invalid solver: %s\n",argv[3]);
         print_help();
@@ -97,7 +110,6 @@ int main(int argc, char* argv[]) {
     // keeping for backwards compatibility with old tests
     steps = atol(argv[4]);
     trials = atoi(argv[5]);
-    bool automagic = false;
 
     for (int i = 4; i < argc; i++) {
         if (strcmp(argv[i], "--P") == 0) {
@@ -126,10 +138,13 @@ int main(int argc, char* argv[]) {
         if (strcmp(argv[i], "--automagic") == 0) {
             automagic = true;
         }
+        if (strcmp(argv[i], "--schedule") == 0) {
+            i++;
+            sprintf(qmc_schedule, "%s", argv[i]);
+			schedule = true;
+        }
     }
 
-    double PTxJ = 0;
-    int MCSxS = 0;
     for (int i = 6; i < argc; i++) {
         if (strcmp(argv[i], "--PTxJ") == 0) {
             i++;
@@ -147,14 +162,13 @@ int main(int argc, char* argv[]) {
 //*******************************************
 
     // initialize problem
-    IsingProblem* p = init_IsingProblem(argv[1]);
+    IsingProblem* p = init_IsingProblem(problemFile);
     if(p == NULL) {
-        printf("unable to initialize ising problem: %s\n", problem);
+        printf("unable to initialize ising problem: %s\n", problemFile);
         return 1;
     }
 
     // prepare storage for solutions
-    char* s = NULL;
     char param_string[256];
     /*
        Magic Numbers
@@ -189,7 +203,7 @@ int main(int argc, char* argv[]) {
     // automagic is the result of my undergraduate research
     // automagic has been tested on QCA circuits only and ranging from
     //  N = 14 to N = 215
-    if (automagic == true) {
+    if(automagic == true) {
         double NlnN = (p->N)*log(p->N);
         double f = 6.5;
         double g = 0.5*powf((f-3.3),1.5) + 6.5;
@@ -198,13 +212,40 @@ int main(int argc, char* argv[]) {
         MCSxS = g*powf(NlnN,0.66);
     }
 
-    if (PTxJ != 0)
+    if(PTxJ != 0)
         T = PTxJ*(p->avg_coupling)/P;
-    if (MCSxS != 0)
+    if(MCSxS != 0)
         steps = MCSxS*(p->N);
 
     printf("Average coupling: %6lf\n"
            "PT Value: %6lf\n",(p->avg_coupling),T*P);
+
+    char sched[80];
+    if(schedule == true) {
+        FILE *fp = fopen(qmc_schedule, "r");
+        if(fp == NULL) {
+            perror(("Error opening file: %s", qmc_schedule));
+            return 1;
+        }
+        // process each line into values and array scheds
+        fgets(sched, 80, fp);
+        sscanf(sched, "%lf %lf %lf %lf %lf %lf", &G0, &Gf, &gsched[0], &gsched[1],
+                &gsched[2], &gsched[3]);
+        fgets(sched, 80, fp);
+        sscanf(sched, "%lf %lf %lf %lf %lf %lf", &Ep0, &Epf, &epsched[0], &epsched[1],
+                &epsched[2], &epsched[3]);
+        fclose(fp);
+    }
+    schedule == true ? sprintf(sched, "%s", "custom") : sprintf(sched, "%s", "linear");
+    // if a qmc_schedule_file argument is given
+    // process the file like this:
+    // - the first line has G0, Gf, and a coeff array [4]
+    // - the second line is Ep0, Epf, etc...
+    // this file needs to be prepared in Python
+    // - process the original schedule into floats
+    // - curve fit it to a cubic for both G and Ep
+    // - write the file
+
 
     // run the solver
     char dumpfile[256];
@@ -219,11 +260,12 @@ int main(int argc, char* argv[]) {
         else {
             sprintf(param_string, "{\"G0\": %3lf, \"Gf\": %6lf, \"Ep0\": %3lf,"
                    " \"Epf\": %3lf, \"P\": %d, \"T\": %6lf, \"steps\": %lu,"
-                   " \"PTxJ\": %3lf, \"MCSxS\": %d, \"N\": %d}",\
-                   G0, Gf, Ep0, Epf, P, T, steps, PTxJ, MCSxS, p->N);
+                   " \"PTxJ\": %3lf, \"MCSxS\": %d, \"N\": %d,"
+                   " \"schedule\": \"%s\"}",\
+                   G0, Gf, Ep0, Epf, P, T, steps, PTxJ, MCSxS, p->N, sched);
             assert(T > 0);
             qmc(G0, Gf, Ep0, Epf, P, T, steps, p, dumpfile, log_accepts,\
-                log_thresh);
+                log_thresh, qmc_schedule, gsched, epsched);
         }
 
         spins_as_hex((p->N), (p->spins), soln_hex);
@@ -234,23 +276,22 @@ int main(int argc, char* argv[]) {
 
     json_object_set_new(root, "test_params", json_string(param_string));
 
-    s = json_dumps(root, JSON_INDENT(1));
-    json_decref(root);
-
     // write output data to file
     FILE *fp = fopen(outfile, "w+");
     if(fp == NULL) {
-        perror("Error opening file");
+        perror(("Error opening file: %s", outfile));
         return 1;
     }
 
     for(int i = 1; i < argc; i++) {
         printf("arg: %d - %s\n", i, argv[i]);
     }
-    fputs(s, fp);
+//     s = json_dumps(root, JSON_INDENT(1));
+
+    fputs(json_dumps(root, JSON_INDENT(1)), fp);
+    json_decref(root);
     fclose(fp);
 
     // clean up
     delete_IsingProblem(p);
-
 }
