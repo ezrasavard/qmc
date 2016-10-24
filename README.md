@@ -6,7 +6,7 @@ that it will be useful. See "LICENSE" for details.
 
 #Background
 This is a C port and enhancement of my undergrad thesis, doing QMC
-in Python. It is not production quality code, but can serve as an example of how to implement these algorithms in two different styles. The Python code uses numpy and matrix operations to perform calculations while the C code uses loops loops and adjecency lists. Both versions include a simulated annealing and PI-QMC implementation.
+in Python. It is not production quality code, but can serve as an example of how to implement these algorithms in two different styles. The Python code uses numpy and matrix operations to perform calculations while the C code uses loops loops and adjacency lists. Both versions include a simulated annealing and PI-QMC implementation.
 
 Problem formats are designed to work with existing code for Quantum-dot
 Cellular Automata (QCA).
