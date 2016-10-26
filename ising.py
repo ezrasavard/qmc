@@ -1,4 +1,3 @@
-import copy
 import numpy as np
 
 class SpinGlass(object):
@@ -23,42 +22,55 @@ class SpinGlass(object):
         self.data_file = data_file
         self.spin_configuration = spin_configuration
         
-        # initialize problem data
+        # declare problem data
+        self.description = None
+        self.size = None
+        
+        # declare soon-to-be numpy arrays
+        # these will be made non-writable
         self.J = None
         self.h = None
         self.adjacency = None
-        self.description = None
-        self.size = None
         self.spins_initial = None
-        self.process_data_file()
+        
+        # populate problem data
+        data = self._process_data_file()
+        self._process_data(data)
 
         if spin_configuration:
-            self.spins_initial = self.hex_to_spins(spin_configuration)
+            self.spins_initial = self.hex_to_spins(spin_configuration, self.size)
         else:
             self.randomize()
 
-        # create a working copy
-        self.spins = copy.copy(self.spins_initial)
-
-        # calculate energies
+        # calculate initial energy
         self.E_initial = self.calculate_E()
+        
+        # create working copies
+        # these values are intended to be accessed and modified by a solver
+        self.spins = [s for s in self.spins_initial]
         self.E = self.E_initial
     
     
-    def process_data_file(self):
-        """Read data_file into usable data structures
+    def _process_data_file(self):
+        """Read data_file, set description and return array"""
+        
+        with open(self.data_file, 'r') as f:
+            self.description = f.readline().strip()
+        data = np.loadtxt(self.data_file, skiprows=1)
+
+        return data
+        
+        
+    def _process_data(self, data):
+        """data array into usable data structures
         
         Create empty spin array
         Create structures for couplings between spins
         Create adjacency list for spins and neighbours
         """
-        with open(self.data_file, 'r') as f:
-            descrip = f.readline().strip()
-        data = np.loadtxt(self.data_file, skiprows=1)
-        
         # map spins to contiguous positive integer values
-        max_spin = np.amax(data[:,(0,1)]).astype(int)
-        unique_spins = np.unique(data[:,(0,1)]).astype(int)
+        max_spin = np.amax(data[:,:-1]).astype(int)
+        unique_spins = np.unique(data[:,:-1]).astype(int)
         spin_map = np.zeros((max_spin + 1), dtype=int)
         for i, spin in enumerate(unique_spins):
             spin_map[spin] = i
@@ -68,11 +80,11 @@ class SpinGlass(object):
         self.spins_initial = np.zeros(self.size, dtype=int)
         self.J = np.zeros((self.size, self.size), dtype=float)
         # this is lower triangular with self-couplings on the diagonal
-        for row in data:
-            i = spin_map[row[0]]
-            j = spin_map[row[1]]
-            self.J[i,j] = row[2]
-            
+        for i, j, J in data:
+            i = spin_map[i]
+            j = spin_map[j]
+            self.J[i,j] = J
+        
         self.h = np.diag(self.J)
         np.fill_diagonal(self.J,0)
         
@@ -82,7 +94,12 @@ class SpinGlass(object):
         # but when these problems are sparse, an adjacency list works
         # much faster -- and in a spinglass, spins often have only two or
         # three neighbours
-        self.adjacency = [[i, [j for j, x in enumerate(self.J[i]) if x != 0]] for i in xrange(self.size)]
+        self.adjacency = ((i, (j for j, x in enumerate(self.J[i]) if x != 0)) for i in xrange(self.size))
+        
+        # lock arrays to prevent accidental mutations
+        self.J.flags.writeable = False
+        self.h.flags.writeable = False
+        self.spins_initial.flags.writeable = False
         
         
     def calculate_E(self):
@@ -93,29 +110,27 @@ class SpinGlass(object):
     def calculate_dE(self, i):
         pass
     
+    
     @staticmethod
     def hex_to_spins(hex_spins, size):
-        """Convert a hex string to a binary array with -1 in place of 0
+        """Convert a hex string to a binary tuple with -1 in place of 0
         
         Consider the left end as the MSB
-        This function takes user input, so we'll go crazy sanitizing it
+        This function takes user input, so we'll be careful
         
         hex_spins: hex representation of spin configuration
         - allows, but doesn't require, a leading "0x"
-        size: intended length of spin array
+        size: intended length of spin tuple
         - should be self.size when called from within the class
         """
         
-        # remove whitespace
+        # sanitize input
         hex_spins = "".join(hex_spins.split())
-        
-        # fail if symbols
         assert(hex_spins.isalnum() == True)
 
         # helper for doing the conversion
         s = lambda string: [1 if x=="1" else -1 for x in "{:b}".format(int(string, 16))]
         
-
         # handle overflow
         spins = []
         while len(hex_spins) > 4:
@@ -123,29 +138,30 @@ class SpinGlass(object):
             hex_spins = hex_spins[4:]
         spins += s(hex_spins)
         
-        # installs trailing zeros, if any
+        # installs trailing zeros, if needed
         while len(spins) < size:
             spins.append(-1)
             
         # verify size wasn't too large
         assert(len(spins) == size)
         
-        return spins
+        return tuple(spins)
         
         
     @staticmethod
     def spins_to_hex(spins):
+        """Return a hex string representation of the spin configuration array"""
         
         spins = "".join([str(1) if x == 1 else str(0) for x in spins])
         
-        return hex(int(spins,2))
+        return hex(int(spins,2)).rstrip("L")
     
     
     def randomize(self):
         """Set self.spins_initial to a random configuration"""
         
-        self.spins_initial = [1 if np.random.random() > 0.5 else -1 for x in self.spins_initial]
-    
+        self.spins_initial = (1 if np.random.random() > 0.5 else -1 for x in self.spins_initial)
+        
     
     def __repr__(self):
         
