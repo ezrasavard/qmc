@@ -104,16 +104,23 @@ class SpinGlass(object):
         """Calculates the energy of the classical spin configuration"""
         
         E = 0
-        for i, s in enumerate(self.spins):
-            Ei = self.h[i]
-            Ei += .5*sum(self.spins[j]*self.J[i,j] for j in self.adjacency[i])
-            E += Ei*s
+        for i in xrange(self.size):
+            E += self.calculate_dE(i)
+        #for i, s in enumerate(self.spins):
+        #    Ei = self.h[i]
+        #    Ei += .5*sum(self.spins[j]*self.J[i,j] for j in self.adjacency[i])
+        #    E += Ei*s
             
         return E
     
     
     def calculate_dE(self, i):
-        pass
+        
+        dE = self.h[i]
+        dE += .5*sum(self.spins[j]*self.J[i,j] for j in self.adjacency[i])
+        dE *= self.spins[i]
+        
+        return dE
     
     
     @staticmethod
