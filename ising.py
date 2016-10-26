@@ -41,13 +41,13 @@ class SpinGlass(object):
             self.spins_initial = self.hex_to_spins(spin_configuration, self.size)
         else:
             self.randomize()
-
-        # calculate initial energy
-        self.E_initial = self.calculate_E()
         
         # create working copies
         # these values are intended to be accessed and modified by a solver
         self.spins = [s for s in self.spins_initial]
+        
+        # calculate initial energy
+        self.E_initial = self.calculate_E()
         self.E = self.E_initial
     
     
@@ -77,7 +77,6 @@ class SpinGlass(object):
 
         # build couplings matrix, spin array and adjacency list
         self.size = unique_spins.size
-        self.spins_initial = np.zeros(self.size, dtype=int)
         self.J = np.zeros((self.size, self.size), dtype=float)
         # this is lower triangular with self-couplings on the diagonal
         for i, j, J in data:
@@ -94,17 +93,23 @@ class SpinGlass(object):
         # but when these problems are sparse, an adjacency list works
         # much faster -- and in a spinglass, spins often have only two or
         # three neighbours
-        self.adjacency = ((i, (j for j, x in enumerate(self.J[i]) if x != 0)) for i in xrange(self.size))
+        self.adjacency = tuple(tuple(j for j, x in enumerate(self.J[i]) if x != 0) for i in xrange(self.size))
         
         # lock arrays to prevent accidental mutations
         self.J.flags.writeable = False
         self.h.flags.writeable = False
-        self.spins_initial.flags.writeable = False
         
         
     def calculate_E(self):
+        """Calculates the energy of the classical spin configuration"""
         
-        return None
+        E = 0
+        for i, s in enumerate(self.spins):
+            Ei = self.h[i]
+            Ei += .5*sum(self.spins[j]*self.J[i,j] for j in self.adjacency[i])
+            E += Ei*s
+            
+        return E
     
     
     def calculate_dE(self, i):
@@ -151,7 +156,7 @@ class SpinGlass(object):
     @staticmethod
     def spins_to_hex(spins):
         """Return a hex string representation of the spin configuration array"""
-        
+
         spins = "".join([str(1) if x == 1 else str(0) for x in spins])
         
         return hex(int(spins,2)).rstrip("L")
@@ -160,7 +165,7 @@ class SpinGlass(object):
     def randomize(self):
         """Set self.spins_initial to a random configuration"""
         
-        self.spins_initial = (1 if np.random.random() > 0.5 else -1 for x in self.spins_initial)
+        self.spins_initial = tuple(1 if np.random.random() > 0.5 else -1 for x in range(self.size))
         
     
     def __repr__(self):
