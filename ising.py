@@ -101,20 +101,20 @@ class SpinGlass(object):
         
         
     def calculate_E(self):
-        """Calculates the energy of the classical spin configuration"""
+        """Calculates the energy of the classical spin configuration
+
+        This isn't done often, so optimizing for speed isn't important
+        """
         
         E = 0
         for i in xrange(self.size):
             E += self.calculate_dE(i)
-        #for i, s in enumerate(self.spins):
-        #    Ei = self.h[i]
-        #    Ei += .5*sum(self.spins[j]*self.J[i,j] for j in self.adjacency[i])
-        #    E += Ei*s
             
         return E
     
     
     def calculate_dE(self, i):
+        """Calculate the difference in energy from flipping a single spin i"""
         
         dE = self.h[i]
         dE += .5*sum(self.spins[j]*self.J[i,j] for j in self.adjacency[i])
