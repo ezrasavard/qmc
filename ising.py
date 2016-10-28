@@ -38,7 +38,7 @@ class SpinGlass(object):
         self._process_data(data)
 
         if spin_configuration:
-            self.spins_initial = self.hex_to_spins(spin_configuration, self.size)
+            self.spins_initial = tuple(self.hex_to_spins(spin_configuration, self.size))
         else:
             self.randomize()
         
@@ -157,7 +157,7 @@ class SpinGlass(object):
         # verify size wasn't too large
         assert(len(spins) == size)
         
-        return tuple(spins)
+        return spins
         
         
     @staticmethod
