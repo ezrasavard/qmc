@@ -137,26 +137,29 @@ class SpinGlass(object):
         """
         
         # sanitize input
+        hex_spins = hex_spins.lstrip("0x").rstrip("L")
         hex_spins = "".join(hex_spins.split())
         assert(hex_spins.isalnum() == True)
+        
 
         # helper for doing the conversion
-        s = lambda string: [1 if x=="1" else -1 for x in "{:b}".format(int(string, 16))]
+        s = lambda string: [1 if x=="1" else -1 for x in "{:04b}".format(int(string, 16))]
         
         # handle overflow
         spins = []
-        while len(hex_spins) > 4:
-            spins += s(hex_spins[0:4])
-            hex_spins = hex_spins[4:]
-        spins += s(hex_spins)
+        for char in hex_spins:
+            spins += s(char)
         
-        # installs trailing zeros, if needed
+        # removing leading "zeros" resulting from fixed width binary
+        while spins[0] == -1:
+            spins = spins[1:]
+            
+        # installs trailing "zeros", if needed
         while len(spins) < size:
             spins.append(-1)
-            
+        
         # verify size wasn't too large
         assert(len(spins) == size)
-        
         return spins
         
         
@@ -165,8 +168,13 @@ class SpinGlass(object):
         """Return a hex string representation of the spin configuration array"""
 
         spins = "".join([str(1) if x == 1 else str(0) for x in spins])
+        hex_string = ""
+        while len(spins) > 4:
+            hex_string = hex(int(spins[-4:],2))[2:] + hex_string
+            spins = spins[:-4]
+        hex_string = hex(int(spins,2)) + hex_string
         
-        return hex(int(spins,2)).rstrip("L")
+        return hex_string
     
     
     def randomize(self):
