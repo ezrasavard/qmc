@@ -15,6 +15,7 @@ class TestIsing:
         """Flip random spins 10000 times or until an error appears"""
         for count in xrange(10000):
             i = np.random.randint(0, self.p.size)
+            print self.p.size
             dE = self.p.calculate_dE(i)
             E0 = self.p.calculate_E()
             self.p.spins[i] ^= True
@@ -23,6 +24,8 @@ class TestIsing:
             print "spin: {}".format(i)
             print "adj: {}".format(self.p.adjacency[i])
             print "J: {}".format([self.p.J[i,j] for j in self.p.adjacency[i]])
+            print "J-sym: {}".format([self.p.J[j,i] for j in self.p.adjacency[i]])
+            print "J-shape: {}".format(self.p.J.shape)
             # floating point can be weird
             assert_equals(abs(diff - dE) > 1e-6, False)
     

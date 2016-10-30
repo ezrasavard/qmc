@@ -82,16 +82,23 @@ class SpinGlass(object):
         self.size = unique_spins.size
         self.J = np.zeros((self.size, self.size), dtype=float)
         # this is lower triangular with self-couplings on the diagonal
-        for i, j, J in data:
+        for i, j, J in np.sort(data, 0):
             i = spin_map[int(i)]
             j = spin_map[int(j)]
-            self.J[i,j] = J
+            if i >= j:
+                self.J[i,j] = J
+            else:
+                self.J[j,i] = J
         
         self.scaling_factor = np.max(np.absolute(self.J))
         self.J /= self.scaling_factor
         self.h = np.diag(self.J).copy()
         np.fill_diagonal(self.J,0)
-        self.J += np.transpose(self.J)
+        # ensure J is formed properly
+        assert(np.triu(self.J).any() == False)
+        
+        self.J = np.tril(self.J)
+        self.J += self.J.transpose()
         
         # about the adjacency list:
         # it is possible to just use h and J with the spins array
