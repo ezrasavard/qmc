@@ -1,5 +1,6 @@
 import bitarray
 import numpy as np
+import prettytable
 
 class SpinGlass(object):
     """An Ising Spin Glass Configuration"""
@@ -191,16 +192,18 @@ class SpinGlass(object):
         
     def __str__(self):
         
-        ret = "Ising Spin Glass"
-        ret += "\nData file: {}".format(self.data_file)
-        ret += "\nProblem description: {}".format(self.description)
-        ret += "\nInitial configuration: {}".format(
-            self.spins_to_hex(self.spins_initial))
-        ret += "\nCurrent configuration: {}".format(self.spins_to_hex(self.spins))
-        ret += "\nInitial energy: {}".format(self.E_initial*self.scaling_factor)
-        ret += "\nCurrent energy: {}".format(self.E*self.scaling_factor)
-
-        return ret
+        ret = "\nIsing Spin Glass\n"
+        x = prettytable.PrettyTable(["Field", "Value"])
+        x.align["Field"] = "l"
+        x.align["Value"] = "l"
+        x.add_row(["data file", self.data_file])
+        x.add_row(["description", "self.description"])
+        x.add_row(["initial config", self.spins_to_hex(self.spins_initial)])
+        x.add_row(["current config", self.spins_to_hex(self.spins)])
+        x.add_row(["initial energy", self.E_initial*self.scaling_factor])
+        x.add_row(["current energy", self.E*self.scaling_factor])
+        
+        return ret + str(x)
 
 
 if __name__ == "__main__":
