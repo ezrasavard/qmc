@@ -43,14 +43,15 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
             dE = self.p.calculate_dE(i)
             if self.step_accepted(dE, T):
                 tmp = self.p.calculate_E()
-                self.p.spins[i] *= -1
+                # flip the boolean spin
+                self.p.spins[i] ^= True
                 
                 diff = self.p.calculate_E() - tmp
                 if abs(dE - diff) > 1e-5:
-                #    print "\nError!"
-                #    print "difference in E = {}".format(diff)
-                #    print "calculated dE = {}".format(dE)
-                #    print ""
+#                    print "\nError!"
+#                    print "difference in E = {}".format(diff)
+#                    print "calculated dE = {}".format(dE)
+#                    print ""
                     evil_spins.append(i)
                 self.p.E += dE
                 
@@ -74,7 +75,7 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
         # Get the best from the queue
         best = np.argmin(self.energies)
         self.p.E = self.energies[best]
-        self.p.spins = self.p.hex_to_spins(self.configurations[best], self.p.size)
+        self.p.spins = self.p.hex_to_spins(self.configurations[best])
 
         return self.p.E, self.configurations[best]
 

@@ -1,3 +1,4 @@
+import bitarray
 import numpy as np
 
 class SpinGlass(object):
@@ -38,14 +39,15 @@ class SpinGlass(object):
         data = self._process_data_file()
         self._process_data(data)
 
+        # process an input hex string configuration, or randomize
         if spin_configuration:
-            self.spins_initial = tuple(self.hex_to_spins(spin_configuration, self.size))
+            self.spins_initial = self.hex_to_spins(spin_configuration)
         else:
             self.randomize()
         
         # create working copies
         # these values are intended to be accessed and modified by a solver
-        self.spins = [s for s in self.spins_initial]
+        self.spins = self.spins_initial.copy()
         
         # calculate initial energy
         self.E_initial = self.calculate_E()
@@ -111,10 +113,12 @@ class SpinGlass(object):
         """
     
         E = 0
-        for i, spin in enumerate(self.spins):
+        for i in xrange(self.size):
             Ei = self.h[i]
-            Ei += 0.5*sum(self.spins[j]*self.J[i,j] for j in self.adjacency[i])
-            E += Ei*spin
+            Ei += 0.5*sum((1 if self.spins[j] else -1)*self.J[i,j] for j in self.adjacency[i])
+            if not self.spins[i]:
+                Ei *= -1
+            E += Ei
             
         return E
     
@@ -123,72 +127,48 @@ class SpinGlass(object):
         """Calculate the difference in energy from flipping a single spin i"""
         
         dE = self.h[i]
-        dE += sum(self.spins[j]*self.J[i,j] for j in self.adjacency[i])
-        dE *= self.spins[i]
+        dE += sum((1 if self.spins[j] else -1)*self.J[i,j] for j in self.adjacency[i])
+        if not self.spins[i]:
+            dE *= -1
 
         return -2*dE
     
     
-    @staticmethod
-    def hex_to_spins(hex_spins, size):
-        """Convert a hex string to a binary tuple with -1 in place of 0
+    def hex_to_spins(self, hex_spins):
+        """Convert a hex string to a big endian binary array
         
-        Consider the left end as the MSB
         This function takes user input, so we'll be careful
         
         hex_spins: hex representation of spin configuration
         - allows, but doesn't require, a leading "0x"
-        size: intended length of spin tuple
-        - should be self.size when called from within the class
         """
         
-        # sanitize input
-        if len(hex_spins) > 1:
-            hex_spins = hex_spins[2:] if hex_spins[1].lower() == "x" else hex_spins
-        hex_spins.rstrip("L")
-        hex_spins = "".join(hex_spins.split())
-        assert(hex_spins.isalnum() == True)
+        # purely alphanumeric strings only
+        assert(hex_spins.isalnum())
+        
+        binary = '{:0{}b}'.format(int(hex_spins,16), self.size)
+        spins = bitarray.bitarray(binary)
 
-
-        # helper for doing the conversion
-        s = lambda string: [1 if x=="1" else -1 for x in "{:04b}".format(int(string, 16))]
-        
-        # handle overflow
-        spins = []
-        for char in hex_spins:
-            spins += s(char)
-        
-        # removing leading "zeros" resulting from fixed width binary
-        while len(spins) > size:
-            spins = spins[1:]
-            
-        # installs trailing "zeros", if needed
-        while len(spins) < size:
-            spins.append(-1)
-        
-        # verify size wasn't too large
-        assert(len(spins) == size)
         return spins
         
-        
-    @staticmethod
-    def spins_to_hex(spins):
-        """Return a hex string representation of the spin configuration array"""
 
-        spins = "".join([str(1) if x == 1 else str(0) for x in spins])
-        hex_string = ""
-        while len(spins) > 4:
-            hex_string = hex(int(spins[-4:],2))[2:] + hex_string
-            spins = spins[:-4]
-        hex_string = hex(int(spins,2)) + hex_string
+    def spins_to_hex(self, spins=None):
+        """Return a hex string representation of the spin configuration bitarray"""
         
-        return hex_string
+        if spins:
+            spins = bitarray.bitarray(spins)
+        else:
+            spins = self.spins
+        hex_spins = "0x{:x}".format(int(spins.to01(),2))
+        
+        return hex_spins
     
     
     def randomize(self):
         """Set self.spins_initial to a random configuration"""
         
-        self.spins_initial = tuple(1 if np.random.random() > 0.5 else -1 for x in range(self.size))
+        spins = [np.random.random() > 0.5 for x in range(self.size)]
+        self.spins_initial = bitarray.bitarray(spins)
         
     
     def __repr__(self):
@@ -204,8 +184,7 @@ class SpinGlass(object):
         ret += "\nProblem description: {}".format(self.description)
         ret += "\nInitial configuration: {}".format(
             self.spins_to_hex(self.spins_initial))
-        ret += "\nCurrent configuration: {}".format(
-            self.spins_to_hex(self.spins))
+        ret += "\nCurrent configuration: {}".format(self.spins_to_hex(self.spins))
         ret += "\nInitial energy: {}".format(self.E_initial*self.scaling_factor)
         ret += "\nCurrent energy: {}".format(self.E*self.scaling_factor)
 
