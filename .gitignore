@@ -1,4 +1,5 @@
 *.o
+dump.txt
 data/
 tests/GENERATED*
 tests/log*
