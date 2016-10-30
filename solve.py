@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import argparse
-import sys
+import copy
 
 import ising
 import simulated_annealing
@@ -9,7 +9,7 @@ import simulated_annealing
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(prog="Ising Solvers")
-    subparsers = parser.add_subparsers(help="solver selection")
+    subparsers = parser.add_subparsers(dest = "solver", help="solver selection")
     
     # parser for config file option
     parser_file = subparsers.add_parser("file", help="read from file")
@@ -20,6 +20,8 @@ if __name__ == "__main__":
     parser_solver.add_argument("-problem", type=str, default="sample_data/ising12.txt", help="a file containing problem data in three column format, see README for details")
     parser_solver.add_argument("-steps", type=int, default=10000, help="number of monte carlo steps (MCS) used, good values depend on problem size")
     parser_solver.add_argument("-dump", type=str, default=None, help="a file to dump move acceptances to, if desired -- slows down performance")
+    parser_solver.add_argument("-spins", type=str, default=None, help="initial spin configuration, if desired")
+    
     
     # parser for PI-QMC
     parser_qmc = subparsers.add_parser("qmc", parents=[parser_solver], help="use PI-QMC with commandline arguments")
@@ -36,10 +38,25 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    problem = ising.SpinGlass(args.problem)
-    print vars(args)
-    annealer = simulated_annealing.SimulatedAnnealing(problem, vars(args))
+    vargs = copy.deepcopy(vars(args))
+    solver = vargs.pop("solver")
     
-    E_final, configuration = annealer.solve()
+    problem = ising.SpinGlass(vargs.pop("problem"), vargs.pop("spins"))
+    
+    if solver == "sa":
+        solver = simulated_annealing.SimulatedAnnealing(problem, vargs)
+    elif solver == "qmc":
+        pass
+    else:
+        pass
+    
+    E_final, configuration = solver.solve()
     print problem
-    print "Solver Finished!"
+    print solver
+    vargs = vars(args)
+    arglist = "{}".format(vargs.pop("solver"))
+    for key in vars(args):
+        if vargs[key] is not None:
+            arglist += " -{} {}".format(key, vargs[key])
+            
+    print "To replicate starting conditions, run with arguments:\n\t{}\n".format(arglist)
