@@ -17,13 +17,13 @@ class TestIsing:
             i = np.random.randint(0, self.p.size)
             dE = self.p.calculate_dE(i)
             E0 = self.p.calculate_E()
-            self.p.spins[i] *= -1
+            self.p.spins[i] ^= True
             diff = self.p.calculate_E() - E0
-            # floating point can be weird
             print "count: {}".format(count)
             print "spin: {}".format(i)
             print "adj: {}".format(self.p.adjacency[i])
             print "J: {}".format([self.p.J[i,j] for j in self.p.adjacency[i]])
+            # floating point can be weird
             assert_equals(abs(diff - dE) > 1e-6, False)
     
     def convert_equals(self, x):
