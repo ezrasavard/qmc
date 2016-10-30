@@ -10,10 +10,9 @@ if __name__ == "__main__":
     problem = ising.SpinGlass(sys.argv[1])
     args = {}
     args["T0"] = 3
-    args["Tf"] = 1e-3
-    annealer = simulated_annealing.SimulatedAnnealing(problem, args, 1e5, "dump.txt")
+    args["Tf"] = .01
+    annealer = simulated_annealing.SimulatedAnnealing(problem, args, 1e4, "dump.txt")
     
     E_final, configuration = annealer.solve()
     print problem
     print "Solver Finished!"
-    print problem.calculate_E()*problem.scaling_factor
