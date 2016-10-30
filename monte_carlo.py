@@ -4,20 +4,20 @@ import numpy as np
 class MonteCarloSolver(object):
     """Base Class for Markov Chain Monte Carlo Methods"""
 
-    def __init__(self, problem, params, steps=1e5, outfile=None):
+    def __init__(self, problem, params):
         """Basic parameters for a Monte Carlo Solver
-
+        
         problem: an ising.SpinGlass object.
-        steps: number of steps to run for.
-        params: dictionary of solver parameters.
-        outfile: if defined, solver will dump energy, configurations and
-        schedule information into this file.
+        params: dictionary of solver parameters including:
+        - steps: number of steps to run for.
+        - dump: if defined, solver will dump energy, configurations and
+                schedule information into this file.
         """
 
         self.p = problem
-        self.steps = steps
+        self.steps = params['steps']
         self.params = copy.deepcopy(params)
-        self.outfile = outfile
+        self.outfile = params['dump']
 
     
     @staticmethod

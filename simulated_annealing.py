@@ -12,10 +12,10 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
     Metropolis-Hastings approach.
     """
     
-    def __init__(self, problem, params, steps=1e5, outfile=None):
+    def __init__(self, problem, params):
         
-        super(SimulatedAnnealing, self).__init__(problem, params, steps, outfile)
-        self.schedule = np.linspace(self.params['T0'], self.params['Tf'], steps)
+        super(SimulatedAnnealing, self).__init__(problem, params)
+        self.schedule = np.linspace(params['T0'], params['Tf'], params['steps'])
         # store last thousand trials in queues
         self.queue_len = 1000
         self.energies = deque(maxlen=self.queue_len)

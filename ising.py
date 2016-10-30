@@ -85,7 +85,7 @@ class SpinGlass(object):
         for i, j, J in data[data[:,0].argsort()]:
             i = spin_map[int(i)]
             j = spin_map[int(j)]
-            print "i: {}, j: {}, J: {}".format(i, j, J)
+            # print "i: {}, j: {}, J: {}".format(i, j, J)
             if i >= j:
                 self.J[i,j] = J
             else:
