@@ -1,6 +1,30 @@
 from nose.tools import assert_equals, assert_raises
+import numpy as np
 
 import ising
+
+class TestIsingCalculations:
+    
+    def setup(self):
+        self.p = ising.SpinGlass("sample_data/evil.txt")
+
+    def teardown(self):
+        pass
+    
+    def test_delta_calcs(self):
+        """Flip random spins 10000 times or until an error appears"""
+        for count in xrange(10000):
+            i = np.random.randint(0, self.p.size)
+            dE = self.p.calculate_dE(i)
+            E0 = self.p.calculate_E()
+            self.p.spins[i] *= -1
+            diff = self.p.calculate_E() - E0
+            # floating point can be weird
+            print "spin: {}".format(i)
+            print "adj: {}".format(self.p.adjacency[i])
+            print "J: {}".format([self.p.J[i,j] for j in self.p.adjacency[i]])
+            assert_equals(abs(diff - dE) > 1e-6, False)
+
 
 class TestIsing:
  
@@ -9,7 +33,6 @@ class TestIsing:
  
     def teardown(self):
         pass
-
     
     def test_hex_to_spins(self):
         assert_equals(self.problem.hex_to_spins("0x4", 3), [1,-1,-1])

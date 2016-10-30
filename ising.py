@@ -25,6 +25,7 @@ class SpinGlass(object):
         # declare problem data
         self.description = None
         self.size = None
+        self.scaling_factor = 1
         
         # declare soon-to-be numpy arrays
         # these will be made non-writable
@@ -80,12 +81,15 @@ class SpinGlass(object):
         self.J = np.zeros((self.size, self.size), dtype=float)
         # this is lower triangular with self-couplings on the diagonal
         for i, j, J in data:
-            i = spin_map[i]
-            j = spin_map[j]
+            i = spin_map[int(i)]
+            j = spin_map[int(j)]
             self.J[i,j] = J
         
-        self.h = np.diag(self.J)
+        self.scaling_factor = np.max(np.absolute(self.J))
+        self.J /= self.scaling_factor
+        self.h = np.diag(self.J).copy()
         np.fill_diagonal(self.J,0)
+        self.J += np.transpose(self.J)
         
         # about the adjacency list:
         # it is possible to just use h and J with the spins array
@@ -93,7 +97,7 @@ class SpinGlass(object):
         # but when these problems are sparse, an adjacency list works
         # much faster -- and in a spinglass, spins often have only two or
         # three neighbours
-        self.adjacency = tuple(tuple(j for j, x in enumerate(self.J[i]) if x != 0) for i in xrange(self.size))
+        self.adjacency = [[j for j, x in enumerate(self.J[i]) if x != 0] for i in xrange(self.size)]
         
         # lock arrays to prevent accidental mutations
         self.J.flags.writeable = False
@@ -105,10 +109,12 @@ class SpinGlass(object):
 
         This isn't done often, so optimizing for speed isn't important
         """
-        
+    
         E = 0
-        for i in xrange(self.size):
-            E += self.calculate_dE(i)
+        for i, spin in enumerate(self.spins):
+            Ei = self.h[i]
+            Ei += 0.5*sum(self.spins[j]*self.J[i,j] for j in self.adjacency[i])
+            E += Ei*spin
             
         return E
     
@@ -117,10 +123,10 @@ class SpinGlass(object):
         """Calculate the difference in energy from flipping a single spin i"""
         
         dE = self.h[i]
-        dE += .5*sum(self.spins[j]*self.J[i,j] for j in self.adjacency[i])
+        dE += sum(self.spins[j]*self.J[i,j] for j in self.adjacency[i])
         dE *= self.spins[i]
-        
-        return dE
+
+        return -2*dE
     
     
     @staticmethod
@@ -137,10 +143,12 @@ class SpinGlass(object):
         """
         
         # sanitize input
-        hex_spins = hex_spins.lstrip("0x").rstrip("L")
+        if len(hex_spins) > 1:
+            hex_spins = hex_spins[2:] if hex_spins[1].lower() == "x" else hex_spins
+        hex_spins.rstrip("L")
         hex_spins = "".join(hex_spins.split())
         assert(hex_spins.isalnum() == True)
-        
+
 
         # helper for doing the conversion
         s = lambda string: [1 if x=="1" else -1 for x in "{:04b}".format(int(string, 16))]
@@ -151,7 +159,7 @@ class SpinGlass(object):
             spins += s(char)
         
         # removing leading "zeros" resulting from fixed width binary
-        while spins[0] == -1:
+        while len(spins) > size:
             spins = spins[1:]
             
         # installs trailing "zeros", if needed
@@ -198,8 +206,8 @@ class SpinGlass(object):
             self.spins_to_hex(self.spins_initial))
         ret += "\nCurrent configuration: {}".format(
             self.spins_to_hex(self.spins))
-        ret += "\nInitial energy: {}".format(self.E_initial)
-        ret += "\nCurrent energy: {}".format(self.E)
+        ret += "\nInitial energy: {}".format(self.E_initial*self.scaling_factor)
+        ret += "\nCurrent energy: {}".format(self.E*self.scaling_factor)
 
         return ret
 
