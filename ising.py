@@ -90,7 +90,8 @@ class SpinGlass(object):
             else:
                 self.J[j,i] = J
         
-        self.scaling_factor = np.max(np.absolute(self.J))
+        if np.max(np.absolute(self.J)) > 1:
+            self.scaling_factor = 1e5
         self.J /= self.scaling_factor
         self.h = np.diag(self.J).copy()
         np.fill_diagonal(self.J,0)
