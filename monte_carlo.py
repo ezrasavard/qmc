@@ -1,5 +1,6 @@
 import copy
 import numpy as np
+import prettytable
 
 class MonteCarloSolver(object):
     """Base Class for Markov Chain Monte Carlo Methods"""
@@ -18,6 +19,7 @@ class MonteCarloSolver(object):
         self.steps = params['steps']
         self.params = copy.deepcopy(params)
         self.outfile = params['dump']
+        self.solver_name = None
 
     
     @staticmethod
@@ -33,7 +35,23 @@ class MonteCarloSolver(object):
         return (dE <= 0.0 or np.exp(-dE/T) > dist())
 
 
+    def _state_dump(self, sched, E, configuration):
+        return "{},{},{}\n".format(sched, E, configuration)
+
+
     def __repr__(self):
 
         return '{}(problem={}, steps={}, params={})'.format(self.__class__,
             repr(self.p), self.steps, self.params)
+    
+    
+    def __str__(self):
+        
+        ret = "\nSolver: {}\n".format(self.solver_name)
+        x = prettytable.PrettyTable(["Parameter", "Value"])
+        x.align["Parameter"] = "l"
+        x.align["Value"] = "l"
+        for key in self.params:
+            x.add_row([key, self.params[key]])
+
+        return ret + x.get_string(sortby="Parameter")

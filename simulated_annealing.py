@@ -20,6 +20,7 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
         self.queue_len = 1000
         self.energies = deque(maxlen=self.queue_len)
         self.configurations = deque(maxlen=self.queue_len)
+        self.solver_name = "Simulated Annealing"
 
         # write a header
         if self.outfile:
@@ -36,7 +37,6 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
         if self.outfile:
             fp = open(self.outfile, 'w')
 
-        evil_spins = []
         for step, T in enumerate(self.schedule):
             # choose a random spin
             i = np.random.randint(0, self.p.size)
@@ -68,6 +68,4 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
         self.p.spins = self.p.hex_to_spins(self.configurations[best])
 
         return self.p.E, self.configurations[best]
-
-    def _state_dump(self, sched, E, configuration):
-        return "{},{},{}\n".format(sched, E, configuration)
+        

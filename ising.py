@@ -186,8 +186,7 @@ class SpinGlass(object):
     
     def __repr__(self):
         
-        return '{}(data_file={}, spin_configuration={})'.format(self.__class__,
-            self.data_file, self.spin_configuration)
+        return '{}(data_file="{}", spin_configuration="{}")'.format(self.__class__, self.data_file, self.spins_to_hex(self.spins))
         
         
     def __str__(self):
@@ -203,7 +202,7 @@ class SpinGlass(object):
         x.add_row(["initial energy", self.E_initial*self.scaling_factor])
         x.add_row(["current energy", self.E*self.scaling_factor])
         
-        return ret + str(x)
+        return ret + x.get_string()
 
 
 if __name__ == "__main__":
