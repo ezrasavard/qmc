@@ -10,8 +10,8 @@ if __name__ == "__main__":
     problem = ising.SpinGlass(sys.argv[1])
     args = {}
     args["T0"] = 3
-    args["Tf"] = 1e-5
-    annealer = simulated_annealing.SimulatedAnnealing(problem, args, 1e3, "dump.txt")
+    args["Tf"] = 1e-3
+    annealer = simulated_annealing.SimulatedAnnealing(problem, args, 1e5, "dump.txt")
     
     E_final, configuration = annealer.solve()
     print problem
