@@ -1,4 +1,4 @@
-random 32x32 spin ising model with solution energy of -136200386.56
+random 32x32 spin ising model with solution energy of -136,200,386.56
 1 2 181
 2 3 -60214
 3 4 86532
