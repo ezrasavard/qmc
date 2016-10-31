@@ -1,3 +1,5 @@
+#This version is no longer (was never?) being supported, unless you know what you are getting into, please use the master branch.
+
 Path Integral Quantum Monte Carlo (QMC) and Simulated Annealing (SA) for solving
 ising spin glasses.
 
