@@ -5,6 +5,7 @@ import copy
 
 import ising
 import simulated_annealing
+import piqmc
 
 if __name__ == "__main__":
     
@@ -30,6 +31,7 @@ if __name__ == "__main__":
     parser_qmc.add_argument("-G0", type=float, default=3, help="initial transverse field strength")
     parser_qmc.add_argument("-Gf", type=float, default=1e-6, help="final tranverse field strength, typically near zero")
     parser_qmc.add_argument("-e0", type=float, default=1e-6, help="initial coupling pre-factor")
+    parser_qmc.add_argument("-ef", type=float, default=4, help="final coupling pre-factor")
     
     # parser for simulated annealing
     parser_sa = subparsers.add_parser("sa", parents=[parser_solver], help="use simulated annealing with commandline arguments")
@@ -41,14 +43,18 @@ if __name__ == "__main__":
     vargs = copy.deepcopy(vars(args))
     solver = vargs.pop("solver")
     
+    if solver == "file":
+        print "File based input is not yet implemented, use commandline =)"
+        exit(1)
+    
     problem = ising.SpinGlass(vargs.pop("problem"), vargs.pop("spins"))
     
     if solver == "sa":
         solver = simulated_annealing.SimulatedAnnealing(problem, vargs)
     elif solver == "qmc":
-        pass
+        solver = piqmc.PathIntegralQMC(problem, vargs)
     else:
-        pass
+        print "Unknown solver: {}".format(solver)
     
     E_final, configuration = solver.solve()
     print problem
