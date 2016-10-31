@@ -18,6 +18,7 @@ class PathIntegralQMC(monte_carlo.MonteCarloSolver):
         
         super(PathIntegralQMC, self).__init__(problem, params)
 
+        self.solver_name = "Path-Integral Quantum Monte Carlo"
         self.P = params['P']
         # effective temperature
         self.PT = self.P*params['T']
@@ -45,6 +46,9 @@ class PathIntegralQMC(monte_carlo.MonteCarloSolver):
 
         if self.outfile:
             fp = open(self.outfile, 'w')
+            config = self.p.spins_to_hex() + ",-1"
+            fp.write("{}\n{}\n{}\n".format(self.solver_name, self.params, repr(self.p)))
+            self._state_dump(fp, self.params["G0"], self.p.E, config)
 
         for Jp, G in self.schedule:
             # try local moves in all slices, in random order

@@ -34,8 +34,12 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
         storage_thresh = self.steps - self.queue_len
         self.energies.clear()
         self.configurations.clear()
+
         if self.outfile:
             fp = open(self.outfile, 'w')
+            config = self.p.spins_to_hex()
+            fp.write("{}\n{}\n{}\n".format(self.solver_name, self.params, repr(self.p)))
+            self._state_dump(fp, self.params["T0"], self.p.E, config)
 
         for step, T in enumerate(self.schedule):
             # choose a random spin
