@@ -22,9 +22,9 @@ Ising Spin Glass
 | data file      | sample_data/ising12.txt                                           |
 | description    | random 12x12 spin ising model with solution energy of -18,972,276 |
 | initial config | 0xadc82fcf240126042784aabeb7fb762a226b                            |
-| current config | 0xc9886330488c11d21c6d2fa1a9591b3dbac2                            |
+| current config | 0xb00f9b4fb7732e13ec522859575feb52ba42                            |
 | initial energy | -792014.0                                                         |
-| current energy | -18242838.0                                                       |
+| current energy | -18018940.0                                                       |
 +----------------+-------------------------------------------------------------------+
 
 Solver: Path-Integral Quantum Monte Carlo
@@ -41,7 +41,7 @@ Solver: Path-Integral Quantum Monte Carlo
 | steps     | 10000 |
 +-----------+-------+
 To replicate starting conditions, run with arguments:
-        qmc -ef 4 -G0 3 -P 40 -steps 10000 -T 0.015 -problem sample_data/ising12.txt -Gf 1e-06 -e0 1e-06
+        qmc -ef 4 -G0 3 -P 40 -steps 10000 -T 0.015 -problem sample_data/ising12.txt -Gf 1e-06 -e0 1e-06 -spins 0xadc82fcf240126042784aabeb7fb762a226b
 </pre>
 
 # Data Input
