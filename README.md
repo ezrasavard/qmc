@@ -4,93 +4,54 @@ ising spin glasses.
 It is free software under the MIT License, and is distributed in the hope 
 that it will be useful. See "LICENSE" for details.
 
-#Background
-This is a C port and enhancement of my undergrad thesis, doing QMC
-in Python. It is not production quality code, but can serve as an example of how to implement these algorithms in two different styles. The Python code uses numpy and matrix operations to perform calculations while the C code uses loops loops and adjacency lists. Both versions include a simulated annealing and PI-QMC implementation.
+# Background
+This is a re-write of [my undergraduate research tools](https://github.com/ezrasavard/qmc/tree/undergrad), to be more user-friendly, generally better written, and more useful to someone trying to learn about these algorithms or solving these problems. The solver includes both simulated annealing and PI-QMC.
 
-Problem formats are designed to work with existing code for Quantum-dot
-Cellular Automata (QCA).
+This newer version is in active development, but is currently functional.
 
-I have a few features planned for this project in the long run, but it is going
-into hibernation.
+# How to Use
+Run solve.py at a terminal and follow the help messages. Default arguments are provided for both solvers and you can override them selectively. In the near future, I'll include a "read from file" capability for parameters.
 
-#Acknowledgements
-This research was funded by NSERC and the University of
-British Columbia, so thanks for that!
+Output will be printed to the console, including an example string for how to run the same test with the same randomized input, like this:
 
+<pre>
+Ising Spin Glass
++----------------+-------------------------------------------------------------------+
+| Field          | Value                                                             |
++----------------+-------------------------------------------------------------------+
+| data file      | sample_data/ising12.txt                                           |
+| description    | random 12x12 spin ising model with solution energy of -18,972,276 |
+| initial config | 0xadc82fcf240126042784aabeb7fb762a226b                            |
+| current config | 0xc9886330488c11d21c6d2fa1a9591b3dbac2                            |
+| initial energy | -792014.0                                                         |
+| current energy | -18242838.0                                                       |
++----------------+-------------------------------------------------------------------+
+
+Solver: Path-Integral Quantum Monte Carlo
++-----------+-------+
+| Parameter | Value |
++-----------+-------+
+| G0        | 3     |
+| Gf        | 1e-06 |
+| P         | 40    |
+| T         | 0.015 |
+| dump      | None  |
+| e0        | 1e-06 |
+| ef        | 4     |
+| steps     | 10000 |
++-----------+-------+
+To replicate starting conditions, run with arguments:
+        qmc -ef 4 -G0 3 -P 40 -steps 10000 -T 0.015 -problem sample_data/ising12.txt -Gf 1e-06 -e0 1e-06
+</pre>
+
+# Data Input
+Problem data is read from a file. The first row of the file contains a description and below that, every row is a set of three values:
+
+    i j J_ij
+
+Where i and j are spin numbers and Jij is the coupling between them. If i and j are equal, then J_ij is the self coupling (h_i). There are example files in sample_data/. Good samples can be obtained from the [spin glass server](http://www.informatik.uni-koeln.de/spinglass/).
+
+# Acknowledgements
 Much of the work on path integral quantum monte carlo simulation is based off
 the 2003 paper "Quantum Annealing by the path-integral Monte Carlo method..." by
 Martonak et al.
-
-#Directory Structure
-data:
-    files for problems
-    files for dwave output data (mostly private, sorry)
-
-examples:
-    usage examples for QMC and SA
-    example problem data
-    example output files
-
-results:
-    output files from simulations and analysis
-    some pretty plots
-
-scripts:
-    scripts for analyzing results and plotting
-
-src:
-    source code
-
-tests:
-    scripts for running (and generating) tests
-
-#How to Use
-Problems should be defined in a three column text file
-
-    cell_id1 cell_id2 coupling
-
-The first line of the file is skipped.
-The program expects the couplings as floating point numbers and will scale them
-up by a factor of 1e5 and operate on them as long integers.
-
-##--help dump
-*** MCMC Solver ***
-Program is designed primarily for research using quantum monte carlo
-
-Positional Arguments:            
-
-	problem data file name            
-	output file name            
-	solver name ('qmc' or 'sa')            
-	(DEPRECATED) number of monte carlo steps            
-	(DEPRECATED) number of trials            
-
-Keyworded Arguments:            
-
-	--steps <int>:        number of steps to use            
-
-	--trials <int>:       number of trials            
-
-	--log_accepts:        turn on logging of move acceptances            
-
-	--log_thresh <float>: threshold for logging slice energies            
-
-	--T <int>:            annealing temp            
-
-Keyworded Aguments (QMC only):            
-
-	--P <int>:            number of trotter slices            
-
-	--PTxJ <double>:      overrides T choice and sets PT as multipler
-	                      of the average coupling strength in the problem            
-
-	--MCSxS <int>:        sets the number of monte carlo steps as a 
-	                      multiple of the number of spins in the problem            
-
-	--automagic:          (experimental!) automatically choose PTxJ and MCSxS 
-	                      to simulate the DWave output distribution            
-
-	--schedule <file>:    file describing annealing schedule            
-
-See "examples" for examples of usage
