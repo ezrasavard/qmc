@@ -182,7 +182,18 @@ class SpinGlass(object):
         
         spins = [np.random.random() > 0.5 for x in range(self.size)]
         self.spins_initial = bitarray.bitarray(spins)
+    
+    def get_spin(self, i):
+        """Return spin as +/- 1"""
         
+        return 1 if self.spins[i] else -1
+    
+    
+    def flip_spin(self, i):
+        """Flip a spin between up and down states"""
+        
+        self.spins[i] ^= True
+    
     
     def __repr__(self):
         

@@ -43,7 +43,7 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
             dE = self.p.calculate_dE(i)
             if self.step_accepted(dE, T):
                 # flip the boolean spin
-                self.p.spins[i] ^= True
+                self.p.flip_spin(i)
                 self.p.E += dE
                 
                 # this will slow things down quite a bit
