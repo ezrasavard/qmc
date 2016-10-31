@@ -42,16 +42,13 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
             i = np.random.randint(0, self.p.size)
             dE = self.p.calculate_dE(i)
             if self.step_accepted(dE, T):
-                # flip the boolean spin
                 self.p.flip_spin(i)
                 self.p.E += dE
                 
-                # this will slow things down quite a bit
-                # it is cool to be able to expose the process though
+                # this will slow things down quite a bit, but is cool to see
                 if self.outfile:
-                    config = self.p.spins_to_hex(self.p.spins)
-                    dump_string = self._state_dump(T, self.p.E, config)
-                    fp.write(dump_string)
+                    self._state_dump(fp, T, self.p.E, self.p.spins_to_hex())
+                    
             
             # store final self.queue_len steps
             if step >= storage_thresh:

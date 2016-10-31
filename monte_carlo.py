@@ -35,8 +35,10 @@ class MonteCarloSolver(object):
         return (dE <= 0.0 or np.exp(-dE/T) > dist())
 
 
-    def _state_dump(self, sched, E, configuration):
-        return "{},{},{}\n".format(sched, E, configuration)
+    def _state_dump(self, fp, sched, E, configuration):
+        """Write to dump file"""
+        
+        fp.write("{},{},{}\n".format(sched, E, configuration))
 
 
     def __repr__(self):
