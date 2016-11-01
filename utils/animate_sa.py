@@ -23,7 +23,8 @@ class AnimatedScatter(object):
 
         # Then setup FuncAnimation.
         self.ani = animation.FuncAnimation(self.fig, self.update, interval=100, 
-                                           init_func=self.setup_plot, blit=True)
+                                           init_func=self.setup_plot, blit=True,
+                                           frames=len(self.data))
 
     def setup_plot(self):
         """Initial drawing of the scatter plot."""
@@ -108,4 +109,3 @@ if __name__ == '__main__':
     a = AnimatedScatter(sys.argv[1])
     fname = os.path.split(sys.argv[1])[-1].split('.')[0]
     a.ani.save('animation_sa-{}.mp4'.format(fname), fps=30, extra_args=['-vcodec', 'libx264'])
-    a.show()
