@@ -7,6 +7,7 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
+import os
 import sys
 
 class AnimatedScatter(object):
@@ -118,5 +119,6 @@ class AnimatedScatter(object):
 if __name__ == '__main__':
 
     a = AnimatedScatter(sys.argv[1])
-    a.ani.save('animation_qmc-{}.mp4'.format(sys.argv[1].split('.')[0]), fps=30, extra_args=['-vcodec', 'libx264'])
+    fname = os.path.split(sys.argv[1])[-1].split('.')[0]
+    a.ani.save('animation_qmc-{}.mp4'.format(fname), fps=30, extra_args=['-vcodec', 'libx264'])
     a.show()
