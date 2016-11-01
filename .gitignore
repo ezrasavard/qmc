@@ -1,4 +1,5 @@
 *.o
+*.mp4
 dump.txt
 data/
 tests/GENERATED*
