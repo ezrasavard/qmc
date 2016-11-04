@@ -51,6 +51,13 @@ Problem data is read from a file. The first row of the file contains a descripti
 
 Where i and j are spin numbers and Jij is the coupling between them. If i and j are equal, then J_ij is the self coupling (h_i). There are example files in sample_data/. Good samples can be obtained from the [spin glass server](http://www.informatik.uni-koeln.de/spinglass/).
 
+# Animations
+Those dump files aren't just for taking up space -- the utils directory includes scripts for animating the results. Want to check out what your QMC looks like? Run utils/animate_qmc.py <your dump file>. You will need ffmpeg to use this and it might not work super well on giant dump files.
+
+There are some examples of it on [my website](http://ezrasavard.com/posts/piqmc-v2/). The plots are made by collapsing the configuration space of the problem into sequential integers, from first explored to last. For that reason, the exploration takes place left to right, while occasionally a walker will wander left to re-check a place it has already been. This seemed like the most elegant way of animating an N! dimensional configuration space.
+
+Because the dump files only include move *acceptances*, the rate of exploration doesn't slow down dramatically as the animation progresses, but instead you will notice that the schedule parameter countdown text starts to make jumps downward.
+
 # Acknowledgements
 Much of the work on path integral quantum monte carlo simulation is based off
 the 2003 paper "Quantum Annealing by the path-integral Monte Carlo method..." by
