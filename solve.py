@@ -64,5 +64,5 @@ if __name__ == "__main__":
     for key in vars(args):
         if vargs[key] is not None:
             arglist += " -{} {}".format(key, vargs[key])
-            
+    arglist += " -spins {}".format(problem.spins_to_hex(problem.spins_initial))
     print "To replicate starting conditions, run with arguments:\n\t{}\n".format(arglist)
