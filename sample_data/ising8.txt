@@ -1,4 +1,4 @@
-random 8x8 ising with solution 
+random 8x8 ising with solution -9,050,169
 1 2 -150712
 2 3 -134848
 3 4 -120836
