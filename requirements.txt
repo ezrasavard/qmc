@@ -1,2 +1,4 @@
 bitarray
+nose
+numpy
 prettytable

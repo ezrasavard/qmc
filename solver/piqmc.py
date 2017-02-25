@@ -3,6 +3,7 @@ import numpy as np
 
 import monte_carlo
 
+
 class PathIntegralQMC(monte_carlo.MonteCarloSolver):
     """Search for global energy minimum with PI-QMC
     
@@ -24,13 +25,13 @@ class PathIntegralQMC(monte_carlo.MonteCarloSolver):
         self.PT = self.P*params['T']
         
         # produce schedules
-        sched_G = np.linspace(params['G0'], params['Gf'], params['steps'])
+        sched_g = np.linspace(params['G0'], params['Gf'], params['steps'])
         sched_e = np.linspace(params['e0'], params['ef'], params['steps'])
         
         # interslice coupling schedule
-        sched_Jp = -0.5*self.PT*np.log(np.tanh(sched_G/(sched_e*self.PT)))
+        sched_jp = -0.5*self.PT*np.log(np.tanh(sched_g/(sched_e*self.PT)))
         
-        self.schedule = zip(sched_Jp, sched_G)
+        self.schedule = zip(sched_jp, sched_g)
         
         # copy problem objects into every slice
         # there is some replication of storage here (J matrix, etc.)
@@ -39,7 +40,6 @@ class PathIntegralQMC(monte_carlo.MonteCarloSolver):
         self.slices = []
         for x in range(self.P):
             self.slices.append(copy.deepcopy(problem))
-
 
     def solve(self):
         """Solve the problem and return the solution energy and configuration"""
@@ -58,13 +58,13 @@ class PathIntegralQMC(monte_carlo.MonteCarloSolver):
                 i = np.random.randint(0, self.p.size)
                 
                 # get local energy cost
-                dE = self.slices[k].calculate_dE(i)
+                de = self.slices[k].calculate_de(i)
                 
                 # get interslice energy cost
-                dE_i = self.calculate_dE_interslice(k, i, Jp)
-                if self.step_accepted(dE + dE_i, self.PT):
+                de_i = self.calculate_de_interslice(k, i, Jp)
+                if self.step_accepted(de + de_i, self.PT):
                     self.slices[k].flip_spin(i)
-                    self.slices[k].E += dE
+                    self.slices[k].E += de
                 
                     # this will slow things down quite a bit, but is cool to see
                     if self.outfile:
@@ -72,17 +72,17 @@ class PathIntegralQMC(monte_carlo.MonteCarloSolver):
                         config = self.slices[k].spins_to_hex() + ",{}".format(k)
                         self._state_dump(fp, G, self.slices[k].E, config)
             
-            dE_global = np.zeros(self.P)
+            de_global = np.zeros(self.P)
             # try a global move on a random spin
             # Jp doesn't impact global moves
             i = np.random.randint(0, self.p.size)
             for k in range(self.P):
-                dE_global[k] = self.slices[k].calculate_dE(i)
+                de_global[k] = self.slices[k].calculate_de(i)
                 
-            if self.step_accepted(np.sum(dE_global), self.PT):
+            if self.step_accepted(np.sum(de_global), self.PT):
                 for k in range(self.P):
                     self.slices[k].flip_spin(i)
-                    self.slices[k].E += dE_global[k]
+                    self.slices[k].E += de_global[k]
                     
                     if self.outfile:
                         # append the slice number for future use
@@ -100,8 +100,7 @@ class PathIntegralQMC(monte_carlo.MonteCarloSolver):
 
         return self.p.E, self.p.spins_to_hex()
         
-        
-    def calculate_dE_interslice(self, k, i, Jp):
+    def calculate_de_interslice(self, k, i, jp):
         """Calculate the interslice energy of a spin flip and apply periodic
         boundary conditions between replicas
         
@@ -110,12 +109,11 @@ class PathIntegralQMC(monte_carlo.MonteCarloSolver):
         Jp: the current interslice coupling strength
         """
         
-        # dE = -2*spin*Jp(spin_left + spin_right)
-        dE = -2*Jp*self.slices[k].get_spin(i)
+        # de = -2*spin*Jp(spin_left + spin_right)
+        de = -2 * jp * self.slices[k].get_spin(i)
         
         # find neighbours and apply boundary conditions
         left = k - 1
         right = k + 1 if k + 1 < self.P else 0
         
-        return dE*(self.slices[left].get_spin(i) + self.slices[right].get_spin(i))
-        
+        return de*(self.slices[left].get_spin(i) + self.slices[right].get_spin(i))

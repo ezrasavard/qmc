@@ -1,8 +1,9 @@
 import datetime
-import numpy as np
 from collections import deque
+import numpy as np
 
 import monte_carlo
+
 
 class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
     """Search for global energy minimum with Simulated Annealing
@@ -34,6 +35,7 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
         storage_thresh = self.steps - self.queue_len
         self.energies.clear()
         self.configurations.clear()
+        fp = None
 
         if self.outfile:
             fp = open(self.outfile, 'w')
@@ -44,15 +46,14 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
         for step, T in enumerate(self.schedule):
             # choose a random spin
             i = np.random.randint(0, self.p.size)
-            dE = self.p.calculate_dE(i)
-            if self.step_accepted(dE, T):
+            de = self.p.calculate_de(i)
+            if self.step_accepted(de, T):
                 self.p.flip_spin(i)
-                self.p.E += dE
+                self.p.E += de
                 
                 # this will slow things down quite a bit, but is cool to see
                 if self.outfile:
                     self._state_dump(fp, T, self.p.E, self.p.spins_to_hex())
-                    
             
             # store final self.queue_len steps
             if step >= storage_thresh:
@@ -69,4 +70,3 @@ class SimulatedAnnealing(monte_carlo.MonteCarloSolver):
         self.p.spins = self.p.hex_to_spins(self.configurations[best])
 
         return self.p.E, self.configurations[best]
-        

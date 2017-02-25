@@ -1,10 +1,14 @@
-from nose.tools import assert_equals, assert_raises
 import numpy as np
+from nose.tools import assert_equals, assert_raises
 
-import ising
+from model import ising
+
 
 class TestIsing:
-    
+
+    def __init__(self):
+        self.p = None
+
     def setup(self):
         self.p = ising.SpinGlass("sample_data/evil.txt")
 
@@ -16,10 +20,10 @@ class TestIsing:
         for count in xrange(10000):
             i = np.random.randint(0, self.p.size)
             print self.p.size
-            dE = self.p.calculate_dE(i)
-            E0 = self.p.calculate_E()
+            dE = self.p.calculate_de(i)
+            E0 = self.p.calculate_e()
             self.p.spins[i] ^= True
-            diff = self.p.calculate_E() - E0
+            diff = self.p.calculate_e() - E0
             print "count: {}".format(count)
             print "spin: {}".format(i)
             print "adj: {}".format(self.p.adjacency[i])
@@ -43,7 +47,16 @@ class TestIsing:
         self.convert_equals("0x4")
         self.convert_equals("4")
         self.convert_equals("0x7fff00ff")
-        self.convert_equals("0x86dcfc84376fb61ad808a166fe5ae0ffbb10b34577980dfaaa74cef69e08ef8d780170c79a5bc4a77b19f8da7e5af55cf9bb295e1f3041d3df1ba5da6543a5325fe5d304bc5c3d2e40b4bc6da5fac1c0aaf0ede5650604dc7ab7ddc93aedafe10efc12fffd1f9839327160fbd0166fca77f4d15b5cd310000000000000000000")
+        long_hex = "0x"
+        long_hex += "86dcfc84376fb61ad808a166fe5ae0ff" \
+                    "bb10b34577980dfaaa74cef69e08ef8d" \
+                    "780170c79a5bc4a77b19f8da7e5af55c" \
+                    "f9bb295e1f3041d3df1ba5da6543a532" \
+                    "5fe5d304bc5c3d2e40b4bc6da5fac1c0" \
+                    "aaf0ede5650604dc7ab7ddc93aedafe1" \
+                    "0efc12fffd1f9839327160fbd0166fca" \
+                    "77f4d15b5cd310000000000000000000"
+        self.convert_equals(long_hex)
         
         assert_raises(AssertionError, self.p.hex_to_spins, "-4")
         assert_raises(AssertionError, self.p.hex_to_spins, "FF FF")

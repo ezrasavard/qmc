@@ -2,9 +2,10 @@ import bitarray
 import numpy as np
 import prettytable
 
+
 class SpinGlass(object):
     """An Ising Spin Glass Configuration"""
-    
+
     def __init__(self,
                  data_file="sample_data/ising32.txt",
                  spin_configuration=None):
@@ -51,10 +52,9 @@ class SpinGlass(object):
         self.spins = self.spins_initial.copy()
         
         # calculate initial energy
-        self.E_initial = self.calculate_E()
+        self.E_initial = self.calculate_e()
         self.E = self.E_initial
-    
-    
+
     def _process_data_file(self):
         """Read data_file, set description and return array"""
         
@@ -63,8 +63,7 @@ class SpinGlass(object):
         data = np.loadtxt(self.data_file, skiprows=1)
 
         return data
-        
-        
+
     def _process_data(self, data):
         """data array into usable data structures
         
@@ -117,9 +116,8 @@ class SpinGlass(object):
         # lock arrays to prevent accidental mutations
         self.J.flags.writeable = False
         self.h.flags.writeable = False
-        
-        
-    def calculate_E(self):
+
+    def calculate_e(self):
         """Calculates the energy of the classical spin configuration
 
         This isn't done often, so optimizing for speed isn't important
@@ -135,8 +133,7 @@ class SpinGlass(object):
             
         return E
     
-    
-    def calculate_dE(self, i):
+    def calculate_de(self, i):
         """Calculate the difference in energy from flipping a single spin i"""
         
         dE = self.h[i]
@@ -145,7 +142,6 @@ class SpinGlass(object):
             dE *= -1
 
         return -2*dE
-    
     
     def hex_to_spins(self, hex_spins):
         """Convert a hex string to a big endian binary array
@@ -163,7 +159,6 @@ class SpinGlass(object):
         spins = bitarray.bitarray(binary)
 
         return spins
-        
 
     def spins_to_hex(self, spins=None):
         """Return a hex string representation of the spin configuration bitarray"""
@@ -176,7 +171,6 @@ class SpinGlass(object):
         
         return hex_spins
     
-    
     def randomize(self):
         """Set self.spins_initial to a random configuration"""
         
@@ -187,19 +181,16 @@ class SpinGlass(object):
         """Return spin as +/- 1"""
         
         return 1 if self.spins[i] else -1
-    
-    
+
     def flip_spin(self, i):
         """Flip a spin between up and down states"""
         
         self.spins[i] ^= True
-    
-    
+
     def __repr__(self):
-        
+
         return '{}(data_file="{}", spin_configuration="{}")'.format(self.__class__, self.data_file, self.spins_to_hex(self.spins))
-        
-        
+
     def __str__(self):
         
         ret = "\nIsing Spin Glass\n"
